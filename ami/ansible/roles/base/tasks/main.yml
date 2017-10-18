@@ -1,0 +1,58 @@
+---
+
+
+# Install some basic packages
+
+
+- name: Install packages
+  apt:
+    name: "{{ item }}"
+  with_items:
+    - python-dev
+    - python-pip
+    - unzip
+    - jq
+    - libffi-dev
+    - htop
+    - iotop
+
+- name: Upgrade pip
+  command: pip install --upgrade pip
+
+- name: Install dependencies
+  command: pip install awscli boto3 botocore requests argparse
+
+
+# Install Java
+
+
+- name: Install Java 8 pre-requisites
+  become: yes
+  apt: name=software-properties-common state=latest
+
+- name: Add Java 8 Repository
+  become: yes
+  apt_repository: repo='ppa:openjdk-r/ppa'
+
+- name: Update apt cache
+  become: yes
+  apt:
+    update_cache: yes
+    cache_valid_time: 86400
+
+- name: Install Java 8
+  become: yes
+  apt: name=openjdk-8-jdk state=latest
+
+
+# Misc
+
+
+# Install 'report failed systemd services' service
+# For logs & status See "systemctl status {unit}.service" and "journalctl -xe".
+- name: Install report-failure as a service
+  copy: src=report-failure.service
+        dest=/etc/systemd/system/report-failure@.service
+        mode=0644
+        group=root
+        owner=root

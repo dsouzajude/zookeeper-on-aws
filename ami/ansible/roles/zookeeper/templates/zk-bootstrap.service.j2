@@ -1,0 +1,12 @@
+[Unit]
+Description=Zookeeper Bootstrap service
+OnFailure=report-failure@%n
+
+[Service]
+ExecStart=/usr/local/bin/zk_bootstrap \
+            --region {{ aws.region }} \
+            --id-file {{ zookeeper.data_dir }} \
+            --dynamic-file {{ zookeeper.dynamic_conf_file }}
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,57 @@
+{
+    "variables": {
+        "ami": "",
+        "region": "",
+        "aws_access_key": "",
+        "aws_secret_key": "",
+        "iam_instance_profile": "",
+        "zookeeper_version": ""
+    },
+    "builders": [{
+        "type": "amazon-ebs",
+        "access_key": "{{user `aws_access_key`}}",
+        "secret_key": "{{user `aws_secret_key`}}",
+        "iam_instance_profile": "{{user `iam_instance_profile`}}",
+        "region": "{{user `region`}}",
+        "source_ami": "{{user `ami`}}",
+        "instance_type": "m3.large",
+        "ami_name": "zk-{{timestamp}}",
+        "ami_description": "Zookeeper AMI",
+        "tags": {
+            "ami_type": "zookeeper",
+            "create_time": "{{isotime}}"
+        },
+        "run_tags": {
+            "host_type": "zookeeper"
+        },
+        "ssh_username": "ubuntu"
+    }],
+    "provisioners": [
+        {
+            "type": "shell",
+            "inline": [
+                "sleep 5",
+                "sudo add-apt-repository -y ppa:ansible/ansible",
+                "sudo apt-get update -y",
+                "DEBIAN_FRONTEND=noninteractive sudo -E apt-get install -y software-properties-common ansible"
+            ]
+        },
+        {
+            "type": "ansible-local",
+            "command": "ansible-playbook -s",
+            "extra_arguments": ["--limit 'zookeeper'"],
+            "inventory_groups": "zookeeper",
+            "role_paths": "ansible/roles",
+            "playbook_dir": "ansible",
+            "playbook_file": "ansible/playbook.yml"
+        },
+        {
+            "type": "shell",
+            "inline": [
+                "sudo passwd -l ubuntu",
+                "sudo rm -rf /home/ubuntu/.ssh",
+                "sudo usermod --expiredate 1 ubuntu"
+            ]
+        }
+    ]
+}

@@ -1,0 +1,85 @@
+---
+
+
+# Install Zookeeper
+
+
+- name: Download Zookeeper
+  get_url:
+    url: http://www.mirrorservice.org/sites/ftp.apache.org/zookeeper/zookeeper-{{ zookeeper.version }}/zookeeper-{{ zookeeper.version }}.tar.gz
+    dest: /tmp/zookeeper-{{ zookeeper.version }}.tar.gz
+    mode: 0440
+
+- name: Unpack Zookeeper
+  command: tar -xf /tmp/zookeeper-{{ zookeeper.version }}.tar.gz -C /opt/
+  creates: /opt/zookeeper-{{ zookeeper.version }}
+
+- name: Link to Zookeeper Directory
+  file: src=/opt/zookeeper-{{ zookeeper.version }}
+        dest=/opt/zookeeper
+        state=link
+        force=yes
+
+- name: Create zookeeper group
+  group: name=zookeeper system=true state=present
+
+- name: Create zookeeper user
+  user: name=zookeeper
+        groups=zookeeper
+        system=true
+        shell=/dev/false
+
+- name: Create Zookeeper directories
+  become: yes
+  file:
+    group: zookeeper
+    owner: zookeeper
+    state: directory
+    recurse: yes
+    mode: 0644
+    path: "{{ item }}"
+  with_items:
+    - "{{ zookeeper.conf_dir }}"
+    - "{{ zookeeper.data_dir }}"
+    - "{{ zookeeper.log_dir }}"
+
+- name: Setup log4j
+  template: dest="{{zookeeper.conf_dir}}/log4j.properties"
+            owner=root
+            group=root
+            mode=644
+            src=log4j.properties.j2
+
+
+# Configure Zookeeper
+
+
+- name: Setup Zookeeper config
+  become: yes
+  template: dest="{{zookeeper.conf_dir}}/zoo.cfg"
+            owner=zookeeper
+            group=zookeeper
+            mode=644
+            src=zoo.cfg.j2
+
+- name: Copy zookeeper bootstrap script
+  become: yes
+  copy: src=zk_bootstrap
+        dest=/usr/local/bin/zk_bootstrap
+        owner=zookeeper
+        group=zookeeper
+        mode=750
+
+- name: Install zookeeper bootstrap service
+  become: yes
+  template: src=zk-bootstrap.service.j2
+            dest=/etc/systemd/system/zk-bootstrap.service
+            owner=root
+            group=root
+            mode=644
+
+- name: Enable zk-bootstrap.
+  become: yes
+  systemd: name=zk-bootstrap
+           state=started
+           daemon_reload=yes

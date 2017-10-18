@@ -1,0 +1,17 @@
+---
+
+zookeeper:
+  version: 3.5.3-beta
+  conf_dir: /etc/zookeeper/conf
+  data_dir: /var/lib/zookeeper
+  log_dir: /var/log/zookeeper
+  dynamic_conf_file: /etc/zookeeper/conf/zoo.dynamic.cfg
+  log_level: WARN
+  tick_time: 2000
+  init_limit: 10
+  sync_limit: 5
+  size: 5
+
+aws:
+  region: eu-west-1
+  log_group: /zookeeper/instances

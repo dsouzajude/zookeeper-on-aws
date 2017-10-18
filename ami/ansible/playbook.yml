@@ -1,0 +1,8 @@
+---
+- name: Zookeeper Playbook
+  become: yes
+  hosts: zookeeper
+  connection: local
+  roles:
+    - base
+    - zookeeper
