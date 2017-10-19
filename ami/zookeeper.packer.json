@@ -44,14 +44,6 @@
             "role_paths": "ansible/roles",
             "playbook_dir": "ansible",
             "playbook_file": "ansible/playbook.yml"
-        },
-        {
-            "type": "shell",
-            "inline": [
-                "sudo passwd -l ubuntu",
-                "sudo rm -rf /home/ubuntu/.ssh",
-                "sudo usermod --expiredate 1 ubuntu"
-            ]
         }
     ]
 }

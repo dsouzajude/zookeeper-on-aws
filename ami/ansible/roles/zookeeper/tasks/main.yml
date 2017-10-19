@@ -78,7 +78,7 @@
             group=root
             mode=644
 
-- name: Enable zk-bootstrap.
+- name: Enable zk-bootstrap.service
   become: yes
   systemd: name=zk-bootstrap
            state=started

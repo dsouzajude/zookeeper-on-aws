@@ -1,4 +1,4 @@
-#!/bin/env python
+#!/usr/local/bin/python
 
 import requests
 import boto3
@@ -145,7 +145,7 @@ def do_bootstrap(region, id_file, dynamic_file):
 
 def _parse_args():
     parser = argparse.ArgumentParser(
-        prog='python bootstrap.py',
+        prog='python zk_bootstrap',
         usage='%(prog)s [options]',
         description='Bootstrap script for the Zookeeper Ensemble.'
     )
@@ -187,9 +187,9 @@ def main():
 
    To run bootstrap:
 
-      bootstrap --region <AWS-REGION> \
-                --id-file <PATH-TO-ID-FILE> \
-                --dynamic-file <PATH-TO-DYNAMIC-FILE>
+      zk_bootstrap --region <AWS-REGION> \
+                   --id-file <PATH-TO-ID-FILE> \
+                   --dynamic-file <PATH-TO-DYNAMIC-FILE>
    '''
    parser = _parse_args()
    args = vars(parser.parse_args())
