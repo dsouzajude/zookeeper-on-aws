@@ -1,0 +1,6 @@
+- Setup IAM role for ZK instances
+- Fix bootstrap script
+- Set 'Name' tag for ZK instances via CF
+
+- Test ansible ami
+- Test CF script
