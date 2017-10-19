@@ -65,7 +65,7 @@
 - name: Copy zookeeper bootstrap script
   become: yes
   copy: src=zk_bootstrap
-        dest=/usr/local/bin/zk_bootstrap
+        dest=/usr/local/bin/zk_bootstrap.py
         owner=zookeeper
         group=zookeeper
         mode=750

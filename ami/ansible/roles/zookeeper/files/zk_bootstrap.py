@@ -1,7 +1,8 @@
-#!/usr/local/bin/python
-
+import argparse
 import requests
+
 import boto3
+import botocore
 
 '''
 
@@ -93,10 +94,13 @@ def get_tag(region, instance_id, tag_key):
    ''' Gets the current EC2 zookeeper_id tag on the current instance
    if there is any tag set. '''
    tag_value = None
-   ec2 = boto3.resource('ec2', region)
-   for tags in ec2instance.tags:
-      if tags["Key"] == tag_key:
-         tag_value = tags["Value"]
+   ec2 = boto3.client('ec2', region)
+   response = ec2.describe_instances(InstanceIds=[instance_id])
+   instance = response['Reservations'][0]['Instances'][0]
+   tags = instance['Tags']
+   for tag in tags:
+      if tag["Key"] == tag_key:
+         tag_value = tag["Value"]
    return tag_value
 
 
@@ -108,7 +112,7 @@ def set_tag(region, instance_id, tag_key, tag_value):
             Tags=[
                {
                   'Key': tag_key,
-                  'Value': tag_value
+                  'Value': str(tag_value)
                }
             ]
          )
@@ -119,7 +123,7 @@ def save_zookeeper_id(filename, zookeeper_id):
    configuration of zookeeper_id to the file.
    '''
    # Backup old configuration
-   backup_filename = '/tmp/{filename}.bk'.format(filename=filename)
+   backup_filename = '{filename}.bk'.format(filename=filename)
    with open(backup_filename, 'w') as fwrite:
       with open(filename, 'r') as fread:
          content = fread.read()
@@ -195,11 +199,13 @@ def main():
    args = vars(parser.parse_args())
    try:
       region = args['region'][0]
-      id_file = args['id-file'][0]
-      dynamic_file = args['dynamic-file'][0]
-      do_bootstrap(region, id_file, dynamic_file)
+      id_file = args['id_file'][0]
+      dynamic_file = args['dynamic_file'][0]
    except:
       parser.print_help()
+      raise
+
+   do_bootstrap(region, id_file, dynamic_file)
 
 
 if __name__=='__main__':
