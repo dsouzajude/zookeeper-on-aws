@@ -1,5 +1,3 @@
-#!/usr/local/bin/python
-
 import json
 import yaml
 import argparse
@@ -116,6 +114,11 @@ instance_type = template.add_parameter(Parameter(
     Description="The instance type to use for Zookeeper instances",
 ))
 
+instance_role = template.add_parameter(Parameter(
+    "InstanceRole",
+    Type="String",
+    Description="The role the Zookeeper EC2 instance would assume",
+))
 
 ### Resources
 
@@ -149,7 +152,8 @@ launch_config = template.add_resource(LaunchConfiguration(
     KeyName=Ref(keyname),
     InstanceType=Ref(instance_type),
     SecurityGroups=[Ref(security_group)],
-    ImageId=Ref(ami_id)
+    ImageId=Ref(ami_id),
+    IamInstanceProfile=Ref(instance_role)
 ))
 
 
@@ -256,7 +260,8 @@ def create_or_update_stack(stack_name,
                            num_hosts,
                            environment,
                            ami,
-                           instance_type):
+                           instance_type,
+                           instance_role):
     ''' Creates or updates the stack with required parameters '''
 
     # Generate the template
@@ -279,7 +284,8 @@ def create_or_update_stack(stack_name,
         {'ParameterKey': 'NumHosts', 'ParameterValue': num_hosts},
         {'ParameterKey': 'Environment', 'ParameterValue': environment},
         {'ParameterKey': 'AmiId', 'ParameterValue': ami},
-        {'ParameterKey': 'InstanceType', 'ParameterValue': instance_type}
+        {'ParameterKey': 'InstanceType', 'ParameterValue': instance_type},
+        {'ParameterKey': 'InstanceRole', 'ParameterValue': instance_role}
     ]
 
     # Create or Update the stack
@@ -301,14 +307,14 @@ def _parse_args():
         '--stackname',
         type=str,
         nargs=1,
-        metavar=("<STACKNAME>"),
+        metavar=("<StackName>"),
         help='EC2 KeyName for SSH access to Zookeeper.'
     )
     parser.add_argument(
         '--keyname',
         type=str,
         nargs=1,
-        metavar=("<KEYNAME>"),
+        metavar=("<KeyName>"),
         help='EC2 KeyName for SSH access to Zookeeper.'
     )
     parser.add_argument(
@@ -342,14 +348,14 @@ def _parse_args():
         '--numhosts',
         type=str,
         nargs=1,
-        metavar=("<NUMHOSTS>"),
+        metavar=("<NumHosts>"),
         help='Number of zookeeper servers to run.'
     )
     parser.add_argument(
         '--environment',
         type=str,
         nargs=1,
-        metavar=("<ENVIRONMENT>"),
+        metavar=("<Environment>"),
         help='The environment to deploy to.'
     )
     parser.add_argument(
@@ -363,8 +369,15 @@ def _parse_args():
         '--instancetype',
         type=str,
         nargs=1,
-        metavar=("<INSTANCETYPE>"),
+        metavar=("<InstanceType>"),
         help='The instance type to use for Zookeeper instances.'
+    )
+    parser.add_argument(
+        '--instancerole',
+        type=str,
+        nargs=1,
+        metavar=("<InstanceRole>"),
+        help='The instance role to use for Zookeeper instances.'
     )
     return parser
 
@@ -383,7 +396,8 @@ def main():
                               --numhosts <NUMHOSTS> \
                               --environment <ENVIRONMENT> \
                               --ami <AMI> \
-                              --instancetype <INSTANCETYPE>
+                              --instancetype <INSTANCETYPE> \
+                              --instancerole <INSTANCEROLE>
 
     '''
     parser = _parse_args()
@@ -403,10 +417,11 @@ def main():
         environment = args['environment'][0]
         ami = args['ami'][0]
         instancetype = args['instancetype'][0]
+        instance_role = args['instancerole'][0]
 
-    except Exception as ex:
-        print(ex)
+    except:
         parser.print_help()
+        raise
 
     # Create or update the stack
     create_or_update_stack(
@@ -419,7 +434,8 @@ def main():
         numhosts,
         environment,
         ami,
-        instancetype
+        instancetype,
+        instance_role
     )
 
 
