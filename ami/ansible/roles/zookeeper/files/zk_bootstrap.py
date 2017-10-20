@@ -1,6 +1,8 @@
+import os
+from datetime import datetime
+
 import argparse
 import requests
-
 import boto3
 import botocore
 
@@ -71,6 +73,7 @@ def get_instance_id():
 
 def get_zookeeper_instances():
    ''' Returns instances of zookeeper '''
+   pass
 
 
 def get_zookeeper_id(region, log_group):
@@ -126,12 +129,15 @@ def save_zookeeper_id(filename, zookeeper_id):
    ''' Performs backup of existing file and saves the new
    configuration of zookeeper_id to the file.
    '''
+   zookeeper_id = str(zookeeper_id)
+
    # Backup old configuration
-   backup_filename = '{filename}.bk'.format(filename=filename)
-   with open(backup_filename, 'w') as fwrite:
-      with open(filename, 'r') as fread:
-         content = fread.read()
-      fwrite.write(content)
+   if os.path.isfile(filename):
+      backup_filename = '{filename}.bk'.format(filename=filename)
+      with open(backup_filename, 'w') as fwrite:
+         with open(filename, 'r') as fread:
+            content = fread.read()
+         fwrite.write(content)
 
    # Save new configuration
    with open(filename, 'w') as fwrite:
@@ -152,7 +158,12 @@ def do_bootstrap(region, id_file, dynamic_file):
    save_zookeeper_id(id_file, zookeeper_id)
 
    # Determine if there is a cluster
+   #
+   #
 
+   # Set bootstrap finished tag
+   now = datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')
+   set_tag(region, instance_id, "bootstrap_finished_time", now)
 
 
 def _parse_args():

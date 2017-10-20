@@ -1,9 +1,11 @@
 [Unit]
 Description=Zookeeper Bootstrap service
-After=network.target
+Wants=network-online.target
+After=zk-instance-init.service
 OnFailure=report-failure@%n
 
 [Service]
+Type=oneshot
 ExecStart=/usr/bin/python /usr/local/bin/zk_bootstrap.py \
                   --region {{ aws.region }} \
                   --id-file {{ zookeeper.data_dir }}/myid \
