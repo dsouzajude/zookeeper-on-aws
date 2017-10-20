@@ -69,6 +69,10 @@ def get_instance_id():
    return instance_id
 
 
+def get_zookeeper_instances():
+   ''' Returns instances of zookeeper '''
+
+
 def get_zookeeper_id(region, log_group):
    ''' Gets an unclaimed zookeeper id that is unique and which does not
    clash with any functional zookeeper id. It guarantees this property
@@ -93,11 +97,11 @@ def get_zookeeper_id(region, log_group):
 def get_tag(region, instance_id, tag_key):
    ''' Gets the current EC2 zookeeper_id tag on the current instance
    if there is any tag set. '''
-   tag_value = None
    ec2 = boto3.client('ec2', region)
    response = ec2.describe_instances(InstanceIds=[instance_id])
    instance = response['Reservations'][0]['Instances'][0]
    tags = instance['Tags']
+   tag_value = None
    for tag in tags:
       if tag["Key"] == tag_key:
          tag_value = tag["Value"]
@@ -139,12 +143,16 @@ def do_bootstrap(region, id_file, dynamic_file):
    otherwise it bootstraps this instance to join the cluster
    via dynamic reconfiguration.
    '''
+   # Get the zookeeper_id
    instance_id = get_instance_id()
    zookeeper_id = get_tag(region, instance_id, ZK_ID_TAG)
    if not zookeeper_id:
       zookeeper_id = get_zookeeper_id(region, ZK_LOG_GROUP)
       set_tag(region, instance_id, ZK_ID_TAG, zookeeper_id)
-      save_zookeeper_id(id_file, zookeeper_id)
+   save_zookeeper_id(id_file, zookeeper_id)
+
+   # Determine if there is a cluster
+
 
 
 def _parse_args():
