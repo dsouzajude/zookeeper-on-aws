@@ -1,11 +1,12 @@
 [Unit]
 Description=Zookeeper Bootstrap service
+After=network.target
 OnFailure=report-failure@%n
 
 [Service]
-ExecStart=python /usr/local/bin/zk_bootstrap.py \
+ExecStart=/usr/bin/python /usr/local/bin/zk_bootstrap.py \
                   --region {{ aws.region }} \
-                  --id-file {{ zookeeper.data_dir }} \
+                  --id-file {{ zookeeper.data_dir }}/myid \
                   --dynamic-file {{ zookeeper.dynamic_conf_file }}
 
 [Install]

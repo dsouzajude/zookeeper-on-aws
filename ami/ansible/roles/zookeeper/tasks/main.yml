@@ -64,7 +64,7 @@
 
 - name: Copy zookeeper bootstrap script
   become: yes
-  copy: src=zk_bootstrap
+  copy: src=zk_bootstrap.py
         dest=/usr/local/bin/zk_bootstrap.py
         owner=zookeeper
         group=zookeeper
@@ -78,8 +78,8 @@
             group=root
             mode=644
 
-- name: Enable zk-bootstrap.service
+- name: Enable zk-bootstrap service
   become: yes
   systemd: name=zk-bootstrap
-           state=started
+           enabled=yes
            daemon_reload=yes
