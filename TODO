@@ -1,6 +1,9 @@
 - Setup IAM role for ZK instances
 - Fix bootstrap script
 - Set 'Name' tag for ZK instances via CF
+- Test case when the cluster is configured and then loses quorum,
+  We then need to form the cluster again (probably bootstrap again).
+
 
 - Test ansible ami
 - Test CF script
