@@ -22,6 +22,9 @@
 - name: Install dependencies
   command: pip install awscli boto3 botocore requests argparse
 
+- name: Install Ubuntu CloudFormation Tools
+  command: pip install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz
+
 
 # Install Java
 
