@@ -1,0 +1,13 @@
+[Unit]
+Description=Zookeeper Instance initialization service
+Wants=network-online.target
+After=network.target network-online.target
+OnFailure=report-failure@%n
+
+[Service]
+Type=oneshot
+Environment="REGION={{ aws.region }}"
+ExecStart=/usr/local/bin/zk_instance_init.sh
+
+[Install]
+WantedBy=multi-user.target
