@@ -27,9 +27,19 @@ echo "127.0.0.1 localhost $INSTANCE_NAME" > /etc/hosts
 
 
 # Set EC2 Instance Name
-aws ec2 create-tags \
-                --region $REGION \
-                --resources $INSTANCE_ID \
-                --tags Key=Name,Value="$INSTANCE_NAME"
+# Doing it in a while loop because sometimes the tag is either overwritten or doesn't get created.
+TAG_VALUE=""
+while [ "$TAG_VALUE" != "$INSTANCE_NAME" ]; do
+    echo "Setting EC2 Instance Name Tag"
+    sleep 5
+    TAG_VALUE=$(aws ec2 describe-tags \
+                    --filters "Name=resource-id,Values=$INSTANCE_ID" "Name=key,Values=Name" \
+                    --region=$REGION \
+                    --output=text  | cut -f5)
+    aws ec2 create-tags \
+                    --region $REGION \
+                    --resources $INSTANCE_ID \
+                    --tags Key=Name,Value="$INSTANCE_NAME"
+done
 
 exit 0
