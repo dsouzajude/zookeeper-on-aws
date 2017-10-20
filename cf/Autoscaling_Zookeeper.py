@@ -18,7 +18,6 @@ from troposphere.autoscaling import(
     Tag
 )
 from troposphere.policies import (
-    AutoScalingReplacingUpdate,
     AutoScalingRollingUpdate,
     UpdatePolicy
 )
@@ -172,15 +171,12 @@ autoscaling_group = template.add_resource(AutoScalingGroup(
     ],
     Tags=[
         Tag("Environment", Ref(environment), True),
-        Tag("Name", "zookeeper", True)
+        Tag("Cluster", "zookeeper", True)
     ],
     UpdatePolicy=UpdatePolicy(
-        AutoScalingReplacingUpdate=AutoScalingReplacingUpdate(
-            WillReplace=True,
-        ),
         AutoScalingRollingUpdate=AutoScalingRollingUpdate(
             PauseTime='PT5M',
-            MinInstancesInService="1",
+            MinInstancesInService="2",
             MaxBatchSize='1',
             WaitOnResourceSignals=True
         )
