@@ -8,19 +8,11 @@ import botocore
 from troposphere import (
     Parameter, Output, Ref, Select, Tags, Template, GetAZs
 )
-from troposphere.ec2 import (
-    SecurityGroup,
-    SecurityGroupRule
-)
-from troposphere.autoscaling import(
-    LaunchConfiguration,
-    AutoScalingGroup,
-    Tag
-)
-from troposphere.policies import (
-    AutoScalingRollingUpdate,
-    UpdatePolicy
-)
+from troposphere import Base64, Join, Retain
+from troposphere.ec2 import SecurityGroup, SecurityGroupRule
+from troposphere.autoscaling import LaunchConfiguration, AutoScalingGroup, Tag
+from troposphere.policies import AutoScalingRollingUpdate, UpdatePolicy
+from troposphere.logs import LogGroup, Destination
 
 
 template = Template()
@@ -152,7 +144,14 @@ launch_config = template.add_resource(LaunchConfiguration(
     InstanceType=Ref(instance_type),
     SecurityGroups=[Ref(security_group)],
     ImageId=Ref(ami_id),
-    IamInstanceProfile=Ref(instance_role)
+    IamInstanceProfile=Ref(instance_role),
+    UserData=Base64(Join('', [
+        "#!/bin/bash\n",
+        "cfn-signal -e 0",
+        " --resource ZkAutoscalingGroup",
+        " --stack ", Ref("AWS::StackName"),
+        " --region ", Ref("AWS::Region"), "\n"
+    ])),
 ))
 
 
@@ -171,18 +170,27 @@ autoscaling_group = template.add_resource(AutoScalingGroup(
     ],
     Tags=[
         Tag("Environment", Ref(environment), True),
-        Tag("Cluster", "zookeeper", True)
+        Tag("Cluster", "zookeeper", True),
+        Tag("Name", "zookeeper", True)
     ],
     UpdatePolicy=UpdatePolicy(
         AutoScalingRollingUpdate=AutoScalingRollingUpdate(
             PauseTime='PT5M',
-            MinInstancesInService="2",
+            MinInstancesInService="1",
             MaxBatchSize='1',
             WaitOnResourceSignals=True
         )
     )
 ))
 
+
+# LogGroup
+log_group = template.add_resource(
+    LogGroup(
+        "ZkLogGroup",
+        LogGroupName="/zookeeper/instances",
+    )
+)
 
 ### Outputs
 
@@ -199,6 +207,10 @@ template.add_output([
     Output(
         "ZkLaunchConfig",
         Value=Ref(launch_config)
+    ),
+    Output(
+        "ZkLogGroup",
+        Value=Ref(log_group)
     )
 ])
 
