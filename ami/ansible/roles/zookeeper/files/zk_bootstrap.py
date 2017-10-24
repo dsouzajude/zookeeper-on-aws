@@ -268,8 +268,8 @@ def set_tag(region, instance_id, tag_key, tag_value):
 def start_zookeeper(conf_dir):
    try:
       _run_command(
-         """/opt/zookeeper/bin/zkServer.sh --config {conf_dir} start
-         """.format(conf_dir=conf_dir)
+         """{zk_path}/zkServer.sh --config {conf_dir} start
+         """.format(zk_path=ZK_PATH, conf_dir=conf_dir)
       )
    except CommandError as ex:
       print ex.stderr
@@ -286,9 +286,9 @@ def reconfigure_ensemble(zookeeper_id,
 
    # Get the current configuration
    config =_run_command(
-      """/opt/zookeeper/bin/zkCli.sh \
+      """{zk_path}/zkCli.sh \
                   -server {ip}:{port} get /zookeeper/config|grep ^server
-      """.format(ip=ensemble_ip, port=ZK_PORT))
+      """.format(zk_path=ZK_PATH, ip=ensemble_ip, port=ZK_PORT))
 
    # Add host as an observer to the ensemble configuration
    config += "server.{id}={ip}:2888:3888:observer;{port}".format(
@@ -300,10 +300,11 @@ def reconfigure_ensemble(zookeeper_id,
 
    # Add host as participant to the ensemble with "add" command
    _run_command(
-      """/opt/zookeeper/bin/zkCli.sh \
+      """{zk_path}/zkCli.sh \
             -server {ensemble_ip}:{port} \
             reconfig -add "server.{id}={zk_ip}:2888:3888:participant;{port}"
       """.format(
+         zk_path=ZK_PATH,
          ensemble_ip=ensemble_ipd,
          port=port,
          zk_ip=zookeeper_ip,
