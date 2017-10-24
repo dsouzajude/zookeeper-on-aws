@@ -67,6 +67,7 @@ ZK_PORT = 2181
 ZK_ID_TAG = 'zookeeper_id'
 ZK_LOG_GROUP = '/zookeeper/instances'
 ZK_PATH = '/opt/zookeeper/bin'
+MAX_INSTANCES = 10
 
 
 class CommandError(Exception):
@@ -179,12 +180,18 @@ def get_zookeeper_instances(region):
    # as setup in the autoscaling group
    # This is important because we need to bootstrap the cluster with
    # that many instances.
+   # Not only should the instances be running but their `zookeeper_id`
+   # tag should also be set
    while True:
       response = ec2.describe_instances(
          Filters=[
             {
                'Name': 'tag:aws:autoscaling:groupName',
                'Values': [asgroup_name]
+            },
+            {
+               'Name': 'tag:zookeeper_id',
+               'Values': [str(num) for num in range(1, MAX_INSTANCES)]
             }
          ]
       )
@@ -193,6 +200,7 @@ def get_zookeeper_instances(region):
       instances = [
          i for i in instances if i['State']['Name'] in ['running', 'pending']
       ]
+
       print 'Found=%s, Actual=%s' % (len(instances), num_instances)
       if len(instances) >= num_instances:
          break
@@ -209,7 +217,7 @@ def get_zookeeper_id(region, log_group):
    with the help of CloudWatch Logs.
    '''
    cwlogs = boto3.client('logs', region)
-   for zkid in range(1, 10):
+   for zkid in range(1, MAX_INSTANCES):
       try:
          cwlogs.create_log_stream(
             logGroupName=log_group,
