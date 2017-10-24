@@ -9,6 +9,6 @@ python CFZookeeper.py \
          --internalsource sg-7728b912 \
          --numhosts 3 \
          --environment Test \
-         --ami ami-a927fed0 \
+         --ami ami-dfaf75a6 \
          --instancetype m4.large \
          --instancerole wrapp-ec2-host
