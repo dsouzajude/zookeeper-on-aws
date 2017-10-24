@@ -42,4 +42,19 @@ while [ "$TAG_VALUE" != "$INSTANCE_NAME" ]; do
                     --tags Key=Name,Value="$INSTANCE_NAME"
 done
 
+
+# Wait for aws:autoscaling:groupName tag to be set
+# Sometimes the tag isn't set directly by EC2
+TAG_VALUE=
+while [ "x$TAG_VALUE" == "x" ]; do
+    echo "Waiting for aws:autoscaling:groupName to be set"
+    sleep 5
+    TAG_VALUE=$(aws ec2 describe-tags \
+                    --filters "Name=resource-id,Values=$INSTANCE_ID" "Name=key,Values=aws:autoscaling:groupName" \
+                    --region=$REGION \
+                    --output=text  | cut -f5)
+done
+
+
+
 exit 0
