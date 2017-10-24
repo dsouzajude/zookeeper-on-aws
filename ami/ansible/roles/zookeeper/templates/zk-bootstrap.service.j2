@@ -6,6 +6,8 @@ OnFailure=report-failure@%n
 
 [Service]
 Type=forking
+Restart=on-failure
+RestartSec=5
 ExecStart=/usr/bin/python /usr/local/bin/zk_bootstrap.py \
                   --region {{ aws.region }} \
                   --id-file {{ zookeeper.data_dir }}/myid \
