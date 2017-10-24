@@ -113,36 +113,6 @@ def save_to_file(filename, content):
       fwrite.write(content)
 
 
-def check_ensemble(ips):
-   ''' Checks if there is a zookeeper ensemble up and running
-   by using the 4 letter word command.
-
-   Note that other ZK nodes can fail in the cluster but if we are able
-   to connect successfully to one instance and run the 4letter word
-   command we have atleast a majority running and therefore a
-   functional ensemble.
-
-   Returns a valid ip if there is a functional ensemble otherwise None.
-   '''
-   for ip in ips:
-      print 'Trying to connect with %s' % ip
-      retry_count = 3
-      while retry_count > 0:
-         try:
-            s = socket.socket()
-            s.settimeout(1)
-            s.connect((ip, ZK_PORT))
-            s.send('stat')
-            s.close()
-            print 'Ensemble is functional. Connected to %s' % (ip)
-            return ip
-         except socket.error, e:
-            print 'Unable to connect to %s' % (ip)
-            retry_count -= 1
-            time.sleep(3)
-   print 'Ensemble is not functional'
-
-
 def get_instance_id():
    ''' Returns the current EC2's instance id. '''
    resp = requests.get('http://169.254.169.254/latest/meta-data/instance-id')
@@ -276,6 +246,36 @@ def start_zookeeper(conf_dir):
       if 'JMX' not in str(ex):
          raise
    print ex.stdout
+
+
+def check_ensemble(ips):
+   ''' Checks if there is a zookeeper ensemble up and running
+   by using the 4 letter word command.
+
+   Note that other ZK nodes can fail in the cluster but if we are able
+   to connect successfully to one instance and run the 4letter word
+   command we have atleast a majority running and therefore a
+   functional ensemble.
+
+   Returns a valid ip if there is a functional ensemble otherwise None.
+   '''
+   for ip in ips:
+      print 'Trying to connect with %s' % ip
+      retry_count = 3
+      while retry_count > 0:
+         try:
+            s = socket.socket()
+            s.settimeout(1)
+            s.connect((ip, ZK_PORT))
+            s.send('stat')
+            s.close()
+            print 'Ensemble is functional. Connected to %s' % (ip)
+            return ip
+         except socket.error, e:
+            print 'Unable to connect to %s' % (ip)
+            retry_count -= 1
+            time.sleep(3)
+   print 'Ensemble is not functional'
 
 
 def reconfigure_ensemble(zookeeper_id,
