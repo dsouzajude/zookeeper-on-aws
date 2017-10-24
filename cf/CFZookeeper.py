@@ -9,7 +9,9 @@ from troposphere import (
     Parameter, Output, Ref, Select, Tags, Template, GetAZs
 )
 from troposphere import Base64, Join, Retain
-from troposphere.ec2 import SecurityGroup, SecurityGroupRule
+from troposphere.ec2 import (
+    SecurityGroup, SecurityGroupRule, SecurityGroupIngress
+)
 from troposphere.autoscaling import LaunchConfiguration, AutoScalingGroup, Tag
 from troposphere.policies import AutoScalingRollingUpdate, UpdatePolicy
 from troposphere.logs import LogGroup, Destination
@@ -70,15 +72,6 @@ zk_ssh_source = template.add_parameter(
     )
 )
 
-zk_internal_source = template.add_parameter(
-    Parameter(
-        "ZkInternalSource",
-        Description="The SecurityGroup source for internal connections",
-        Type="String",
-        Default="0.0.0.0/0"
-    )
-)
-
 num_hosts = template.add_parameter(Parameter(
     "NumHosts",
     Default="3",
@@ -117,24 +110,30 @@ instance_role = template.add_parameter(Parameter(
 # Security Group for Zookeeper
 security_group = template.add_resource(SecurityGroup(
     "ZkSecurityGroup",
-    GroupDescription="Security group for access to Zookeeper",
     SecurityGroupIngress=[
         SecurityGroupRule(
                 IpProtocol='tcp',
                 FromPort='22',
                 ToPort='22',
                 SourceSecurityGroupId=Ref(zk_ssh_source)
-        ),
-        SecurityGroupRule(
-                IpProtocol='tcp',
-                FromPort='0',
-                ToPort='0',
-                SourceSecurityGroupId=Ref(zk_internal_source)
         )
     ],
+    GroupDescription="Security group for access to Zookeeper",
     VpcId=Ref(vpcid),
     Tags=Tags(Name='zookeeper', Environment=Ref(environment))
 ))
+
+zk_ingress_rule = template.add_resource(
+    SecurityGroupIngress(
+        "ZkIngressRule",
+        FromPort='-1',
+        ToPort='-1',
+        IpProtocol='-1',
+        GroupId=Ref(security_group),
+        SourceSecurityGroupId=Ref(security_group),
+        DependsOn='ZkSecurityGroup'
+    )
+)
 
 
 # Launch Configuration for Zookeeper
@@ -264,7 +263,6 @@ def create_or_update_stack(stack_name,
                            vpcid,
                            subnets,
                            sshsource,
-                           internalsource,
                            num_hosts,
                            environment,
                            ami,
@@ -288,7 +286,6 @@ def create_or_update_stack(stack_name,
         {'ParameterKey': 'SubnetIdB', 'ParameterValue': subnets[1]},
         {'ParameterKey': 'SubnetIdC', 'ParameterValue': subnets[2]},
         {'ParameterKey': 'ZkSshSource', 'ParameterValue': sshsource},
-        {'ParameterKey': 'ZkInternalSource', 'ParameterValue': internalsource},
         {'ParameterKey': 'NumHosts', 'ParameterValue': num_hosts},
         {'ParameterKey': 'Environment', 'ParameterValue': environment},
         {'ParameterKey': 'AmiId', 'ParameterValue': ami},
@@ -346,13 +343,6 @@ def _parse_args():
         help='Incoming source SecurityGroup for SSH access.'
     )
     parser.add_argument(
-        '--internalsource',
-        type=str,
-        nargs=1,
-        metavar=("<InternalSource>"),
-        help='Incoming source SecurityGroup for internal access.'
-    )
-    parser.add_argument(
         '--numhosts',
         type=str,
         nargs=1,
@@ -400,7 +390,6 @@ def main():
                               --vpcid <VPCID> \
                               --subnets <SUBNET-A> <SUBNET-B> <SUBNET-C> \
                               --sshsource <SecurityGroup> \
-                              --internalsource <SecurityGroup> \
                               --numhosts <NUMHOSTS> \
                               --environment <ENVIRONMENT> \
                               --ami <AMI> \
@@ -420,7 +409,6 @@ def main():
         subnet_b = args['subnets'][1]
         subnet_c = args['subnets'][2]
         sshsource = args['sshsource'][0]
-        internalsource = args['internalsource'][0]
         numhosts = args['numhosts'][0]
         environment = args['environment'][0]
         ami = args['ami'][0]
@@ -438,7 +426,6 @@ def main():
         vpcid,
         [subnet_a, subnet_b, subnet_c],
         sshsource,
-        internalsource,
         numhosts,
         environment,
         ami,
