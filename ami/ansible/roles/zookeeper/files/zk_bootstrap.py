@@ -1,6 +1,5 @@
 import os
 import time
-import socket
 import subprocess
 from datetime import datetime
 
@@ -264,17 +263,18 @@ def check_ensemble(ips):
       retry_count = 3
       while retry_count > 0:
          try:
-            s = socket.socket()
-            s.settimeout(1)
-            s.connect((ip, ZK_PORT))
-            s.send('stat')
-            s.close()
-            print 'Ensemble is functional. Connected to %s' % (ip)
-            return ip
-         except socket.error, e:
-            print 'Unable to connect to %s' % (ip)
-            retry_count -= 1
-            time.sleep(3)
+            stdout = _run_command(
+               "echo stat | nc {ip} 2181 | grep Mode".format(ip=ip)
+            )
+            is_functional = 'leader' in stdout or 'follower' in stdout
+            if is_functional:
+               print 'Ensemble is functional. Connected to %s' % (ip)
+               return ip
+         except CommandError as ex:
+            print 'Failed to connect to %s with error' % (ip, str(ex))
+         retry_count -= 1
+         time.sleep(3)
+
    print 'Ensemble is not functional'
 
 
