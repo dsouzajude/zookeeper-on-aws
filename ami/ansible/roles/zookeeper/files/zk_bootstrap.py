@@ -259,6 +259,7 @@ def start_zookeeper(conf_dir):
          """.format(conf_dir=conf_dir)
       )
    except CommandError as ex:
+      print str(ex)
       if 'JMX' not in str(ex):
          raise
 
