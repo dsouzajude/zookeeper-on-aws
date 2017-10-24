@@ -71,7 +71,12 @@ MAX_INSTANCES = 10
 
 
 class CommandError(Exception):
-   pass
+   def __init__(self, stdout, stderr):
+      self.stdout = stdout
+      self.stderr = stderr
+      super(CommandError, self)\
+         .__init__("stdout: {stdout}\nstderr: {stderr}" \
+         .format(stdout=stdout,stderr=stderr))
 
 
 def _run_command(command):
@@ -85,7 +90,7 @@ def _run_command(command):
    stdout = stdout.strip()
    stderr = stderr.strip()
    if stderr:
-      raise CommandError(stderr)
+      raise CommandError(stdout, stderr)
    return stdout
 
 
@@ -267,9 +272,10 @@ def start_zookeeper(conf_dir):
          """.format(conf_dir=conf_dir)
       )
    except CommandError as ex:
-      print str(ex)
+      print ex.stderr
       if 'JMX' not in str(ex):
          raise
+   print ex.stdout
 
 
 def reconfigure_ensemble(zookeeper_id,
