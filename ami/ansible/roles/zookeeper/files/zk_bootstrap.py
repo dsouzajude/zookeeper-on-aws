@@ -236,6 +236,7 @@ def set_tag(region, instance_id, tag_key, tag_value):
 
 def start_zookeeper(conf_dir):
    ''' Starts zookeeper server. '''
+   print 'Starting Zookeeper server'
    try:
       _run_command(
          """{zk_path}/zkServer.sh --config {conf_dir} start
@@ -246,6 +247,7 @@ def start_zookeeper(conf_dir):
       if 'JMX' not in str(ex):
          raise
    print ex.stdout
+   print 'Zookeeper started.'
 
 
 def check_ensemble(ips):
@@ -282,7 +284,8 @@ def check_ensemble(ips):
 def reconfigure_ensemble(zookeeper_id,
                          zookeeper_ip,
                          ensemble_ip,
-                         dynamic_file):
+                         dynamic_file,
+                         conf_dir):
    ''' Reconfigures the zookeeper ensemble by adding a new server to it. '''
 
    # Get the current configuration
@@ -292,12 +295,13 @@ def reconfigure_ensemble(zookeeper_id,
       """.format(zk_path=ZK_PATH, ip=ensemble_ip, port=ZK_PORT))
 
    # Add host as an observer to the ensemble configuration
-   config += "server.{id}={ip}:2888:3888:observer;{port}".format(
+   config += "\nserver.{id}={ip}:2888:3888:observer;{port}".format(
       id=zookeeper_id,
       ip=zookeeper_ip,
       port=ZK_PORT
    )
    save_to_file(dynamic_file, config)
+   start_zookeeper(conf_dir)
 
    # Add host as participant to the ensemble with "add" command
    _run_command(
@@ -307,14 +311,14 @@ def reconfigure_ensemble(zookeeper_id,
       """.format(
          zk_path=ZK_PATH,
          ensemble_ip=ensemble_ip,
-         port=port,
+         port=ZK_PORT,
          zk_ip=zookeeper_ip,
          id=zookeeper_id
       )
    )
 
 
-def configure_ensemble(zk_id_ip_pairs, dynamic_file):
+def configure_ensemble(zk_id_ip_pairs, dynamic_file, conf_dir):
    '''Configures zookeeper ensemble with zookeeper instances. '''
    configs = []
    for pair in zk_id_ip_pairs:
@@ -329,6 +333,7 @@ def configure_ensemble(zk_id_ip_pairs, dynamic_file):
 
    ensemble_config = '\n'.join(configs)
    save_to_file(dynamic_file, ensemble_config)
+   start_zookeeper(conf_dir)
 
 
 def do_bootstrap(region, id_file, dynamic_file, conf_dir):
@@ -387,16 +392,10 @@ def do_bootstrap(region, id_file, dynamic_file, conf_dir):
    valid_ip = check_ensemble(zk_other_ips)
    if valid_ip:
       print 'Reconfiguring ensemble with new server'
-      reconfigure_ensemble(zk_id, zk_ip, valid_ip, dynamic_file)
+      reconfigure_ensemble(zk_id, zk_ip, valid_ip, dynamic_file, conf_dir)
    else:
       print 'Configuring ensemble with all servers'
-      configure_ensemble(zk_id_ip_pairs, dynamic_file)
-
-   # Start the zookeeper server
-   print 'Starting Zookeeper server'
-   start_zookeeper(conf_dir)
-   print 'Zookeeper started.'
-
+      configure_ensemble(zk_id_ip_pairs, dynamic_file, conf_dir)
 
    # Set bootstrap finished tag
    print 'Setting `bootstrap_finished_time` tag'
