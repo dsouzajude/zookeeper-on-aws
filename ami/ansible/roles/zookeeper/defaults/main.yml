@@ -10,7 +10,6 @@ zookeeper:
   tick_time: 2000
   init_limit: 10
   sync_limit: 5
-  size: 5
 
 aws:
   region: eu-west-1
