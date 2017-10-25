@@ -246,6 +246,9 @@ def start_zookeeper(conf_dir):
       print ex.stderr
       if 'JMX' not in str(ex):
          raise
+
+   # Wait a bit for Zookeeper to initialize itself
+   time.sleep(5)
    print ex.stdout
    print 'Zookeeper started.'
 

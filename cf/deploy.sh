@@ -8,6 +8,6 @@ python CFZookeeper.py \
          --sshsource sg-7728b912 \
          --numhosts 3 \
          --environment Test \
-         --ami ami-a1419bd8 \
+         --ami ami-cd77adb4 \
          --instancetype m4.large \
          --instancerole wrapp-ec2-host
