@@ -235,6 +235,7 @@ def set_tag(region, instance_id, tag_key, tag_value):
 
 
 def start_zookeeper(conf_dir):
+   ''' Starts zookeeper server. '''
    try:
       _run_command(
          """{zk_path}/zkServer.sh --config {conf_dir} start
@@ -305,7 +306,7 @@ def reconfigure_ensemble(zookeeper_id,
             reconfig -add "server.{id}={zk_ip}:2888:3888:participant;{port}"
       """.format(
          zk_path=ZK_PATH,
-         ensemble_ip=ensemble_ipd,
+         ensemble_ip=ensemble_ip,
          port=port,
          zk_ip=zookeeper_ip,
          id=zookeeper_id
@@ -454,10 +455,10 @@ def main():
 
    To run bootstrap:
 
-      zk_bootstrap --region <AWS-REGION> \
-                   --id-file <PATH-TO-ID-FILE> \
-                   --dynamic-file <PATH-TO-DYNAMIC-FILE> \
-                   --conf-dir <PATH-TO-CONF-DIRECTORY>
+      python zk_bootstrap.py --region <AWS-REGION> \
+                             --id-file <PATH-TO-ID-FILE> \
+                             --dynamic-file <PATH-TO-DYNAMIC-FILE> \
+                             --conf-dir <PATH-TO-CONF-DIRECTORY>
    '''
    parser = _parse_args()
    args = vars(parser.parse_args())
@@ -480,5 +481,6 @@ if __name__=='__main__':
 
 
 # TODO
+# Use logging library
 # Remove old zookeeper machine that was terminated
 # Cron job for removing all inactive zookeeper ids
