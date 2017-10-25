@@ -16,7 +16,7 @@ For the bootstrapping we require two files to be configured:
    - File that contains the machine id:
        {ZK_DATA_DIR}/myid
    - File that contains the list of servers:
-       {ZK_CONF_DIR}/zoo.dynamic.cfg
+       {ZK_CONF_DIR}/zoo.cfg.dynamic
 
 
 Challenges:
@@ -31,7 +31,7 @@ Challenges:
    - Fresh bootstrap means, there is no zookeeper cluster
    or nodes are just started and need to form a cluster.
      - In this case, the active zookeepers would need
-       to generate the {ZK_CONF_DIR}/zoo.dynamic.cfg and
+       to generate the {ZK_CONF_DIR}/zoo.cfg.dynamic and
        use that to form the cluster.
 
    - Dynamic Reconfiguration means there is a zookeeper cluster
@@ -243,7 +243,7 @@ def start_zookeeper(conf_dir):
          """.format(zk_path=ZK_PATH, conf_dir=conf_dir)
       )
    except CommandError as ex:
-      print ex.stderr
+      print "Err: %s" % ex.stderr
       if 'JMX' not in str(ex):
          raise
 
@@ -291,7 +291,15 @@ def reconfigure_ensemble(zookeeper_id,
                          conf_dir):
    ''' Reconfigures the zookeeper ensemble by adding a new server to it. '''
 
-   # Get the current configuration
+   # Get and reset the current configuration
+   # For the static and dynamic file
+   _run_command(
+      """sed -i 's/dynamicConfigFile=.*/dynamicConfigFile={dynamic_file}/' {conf_dir}/zoo.cfg
+      """.format(
+         dynamic_file=dynamic_file.replace("/", "\/"),
+         conf_dir=conf_dir
+      )
+   )
    config =_run_command(
       """{zk_path}/zkCli.sh \
                   -server {ip}:{port} get /zookeeper/config|grep ^server

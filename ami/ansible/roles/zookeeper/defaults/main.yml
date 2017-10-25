@@ -5,7 +5,7 @@ zookeeper:
   conf_dir: /etc/zookeeper/conf
   data_dir: /var/lib/zookeeper
   log_dir: /var/log/zookeeper
-  dynamic_conf_file: /etc/zookeeper/conf/zoo.dynamic.cfg
+  dynamic_conf_file: /etc/zookeeper/conf/zoo.cfg.dynamic
   log_level: WARN
   tick_time: 2000
   init_limit: 10
