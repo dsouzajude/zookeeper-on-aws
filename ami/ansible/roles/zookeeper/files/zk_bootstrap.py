@@ -248,7 +248,7 @@ def start_zookeeper(conf_dir):
          raise
 
    # Wait a bit for Zookeeper to initialize itself
-   time.sleep(5)
+   time.sleep(30)
    print ex.stdout
    print 'Zookeeper started.'
 
