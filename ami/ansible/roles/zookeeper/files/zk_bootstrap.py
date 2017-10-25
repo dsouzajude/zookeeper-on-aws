@@ -574,5 +574,4 @@ if __name__=='__main__':
 
 # TODO
 # Use logging library
-# Remove old zookeeper machine that was terminated
-# Cron job for removing all inactive zookeeper ids
+# Test this shit
