@@ -43,6 +43,12 @@ def _cmd_get_zookeeper_configuration(ensemble_ip):
    )
 
 
+def _cmd_delete_old_state(data_dir):
+   return utils.run_command(
+      """rm -rf {data_dir}/version-2/*""".format(data_dir=data_dir)
+   )
+
+
 def _cmd_remove_zookeeper_ids(ensemble_ip, terminated_ids):
    return utils.run_command(
       """{zk_path}/zkCli.sh \
@@ -252,11 +258,15 @@ def reconfigure_ensemble(region, zookeeper_id, zookeeper_ip,
    print 'Ensemble Reconfigured.'
 
 
-def configure_ensemble(zk_id_ip_pairs, dynamic_file, conf_dir):
+def configure_ensemble(zk_id_ip_pairs, dynamic_file, conf_dir, data_dir):
    '''Configures zookeeper ensemble with zookeeper instances.
    After configuration, it starts the zookeeper server.
    '''
    print 'Doing a fresh Zookeeper ensemble configuration'
+
+   print 'Wiping out old state'
+   _cmd_delete_old_state(data_dir)
+
    print 'Resetting static configuration'
    _cmd_reset_config(dynamic_file, conf_dir)
 
@@ -279,7 +289,7 @@ def configure_ensemble(zk_id_ip_pairs, dynamic_file, conf_dir):
    print 'Ensemble Configured.'
 
 
-def do_bootstrap(region, id_file, dynamic_file, conf_dir):
+def do_bootstrap(region, id_file, dynamic_file, conf_dir, data_dir):
    ''' Bootstraps the zookeeper cluster if it does not exists
    otherwise it bootstraps this instance to join the cluster
    via dynamic reconfiguration.
@@ -362,7 +372,8 @@ def do_bootstrap(region, id_file, dynamic_file, conf_dir):
       configure_ensemble(
          zk_id_ip_pairs,
          dynamic_file,
-         conf_dir
+         conf_dir,
+         data_dir
       )
 
    # Set bootstrap finished tag

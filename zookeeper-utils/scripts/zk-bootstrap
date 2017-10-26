@@ -7,7 +7,7 @@ from zkutils import zk, aws
 
 def _parse_args():
     parser = argparse.ArgumentParser(
-        prog='python zk_bootstrap.py',
+        prog='zk-bootstrap',
         usage='%(prog)s [options]',
         description='Bootstrap script for the Zookeeper Ensemble.'
     )
@@ -39,6 +39,13 @@ def _parse_args():
         metavar=("PATH-TO-CONF-DIRECTORY"),
         help='Path to the conf directory.'
     )
+    parser.add_argument(
+        '--data-dir',
+        type=str,
+        nargs=1,
+        metavar=("PATH-TO-DATA-DIRECTORY"),
+        help='Path to the data directory.'
+    )
     return parser
 
 
@@ -59,7 +66,8 @@ def main():
       zk-bootstrap --region <AWS-REGION> \
                    --id-file <PATH-TO-ID-FILE> \
                    --dynamic-file <PATH-TO-DYNAMIC-FILE> \
-                   --conf-dir <PATH-TO-CONF-DIRECTORY>
+                   --conf-dir <PATH-TO-CONF-DIRECTORY> \
+                   --data-dir <PATH-TO-DATA-DIRECTORY>
    '''
    parser = _parse_args()
    args = vars(parser.parse_args())
@@ -68,11 +76,12 @@ def main():
       id_file = args['id_file'][0]
       dynamic_file = args['dynamic_file'][0]
       conf_dir = args['conf_dir'][0]
+      data_dir = args['data_dir'][0]
    except:
       parser.print_help()
       raise
 
-   zk.do_bootstrap(region, id_file, dynamic_file, conf_dir)
+   zk.do_bootstrap(region, id_file, dynamic_file, conf_dir, data_dir)
 
 
 if __name__=='__main__':
