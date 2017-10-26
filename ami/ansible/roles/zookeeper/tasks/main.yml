@@ -1,6 +1,13 @@
 ---
 
 
+# Install Zookeeper utils
+
+
+- name: Install zookeeper utils
+  command: pip install /tmp/zookeeper-utils
+
+
 # Install Zookeeper
 
 
@@ -83,14 +90,6 @@
   systemd: name=zk-instance-init
            enabled=yes
            daemon_reload=yes
-
-- name: Copy zookeeper bootstrap script
-  become: yes
-  copy: src=zk_bootstrap.py
-        dest=/usr/local/bin/zk_bootstrap.py
-        owner=zookeeper
-        group=zookeeper
-        mode=750
 
 - name: Install zookeeper bootstrap service
   become: yes

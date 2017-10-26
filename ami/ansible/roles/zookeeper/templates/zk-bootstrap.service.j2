@@ -9,7 +9,7 @@ Type=forking
 Restart=on-failure
 RestartSec=5
 TimeoutSec=600
-ExecStart=/usr/bin/python /usr/local/bin/zk_bootstrap.py \
+ExecStart=/usr/local/bin/zk-bootstrap \
                   --region {{ aws.region }} \
                   --id-file {{ zookeeper.data_dir }}/myid \
                   --dynamic-file {{ zookeeper.dynamic_conf_file }} \

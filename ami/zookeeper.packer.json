@@ -37,6 +37,11 @@
             ]
         },
         {
+            "type": "file",
+            "source": "../zookeeper-utils",
+            "destination": "/tmp/zookeeper-utils"
+        },
+        {
             "type": "ansible-local",
             "command": "ansible-playbook -s",
             "extra_arguments": ["--limit 'zookeeper'"],
