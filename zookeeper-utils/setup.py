@@ -13,6 +13,7 @@ setup(
     include_package_data=True,
     scripts = [
         'scripts/zk-bootstrap',
+        'scripts/zk-recovery',
         'scripts/zk-remove-terminated'
     ],
     install_requires=[

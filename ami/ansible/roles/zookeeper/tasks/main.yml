@@ -104,3 +104,10 @@
   systemd: name=zk-bootstrap
            enabled=yes
            daemon_reload=yes
+
+- name: Cron job to detect and recover zookeepr cluster
+  cron:
+    name: zk-recovery
+    user: root
+    minute: "*"
+    job: "REGION={{ aws.region }} /usr/local/bin/zk-recovery >> /var/log/zk-recovery.log 2>&1"
