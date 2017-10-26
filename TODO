@@ -1,9 +1,23 @@
-- Setup IAM role for ZK instances
-- Fix bootstrap script
-- Set 'Name' tag for ZK instances via CF
-- Test case when the cluster is configured and then loses quorum,
-  We then need to form the cluster again (probably bootstrap again).
+- Detect and Automatically recover from Quorum failure
+  - Cron job that periodically checks status
+  and if it had properly bootstrapped but currently
+  there is no quorum, bootstrap the instance again.
+    - Ensure that no two or more instances of
+    this cron job is running at the same time.
 
+- Backup zookeeper data, load it on recovery
+  - Only applicable to fresh bootstraps (when ZK failed)
 
-- Test ansible ami
+- Test ansible playbook
 - Test CF script
+- Test zookeeper-utils
+
+
+- README.md with instructions how to build and deploy the ami
+  - To build:
+    >> cd ami
+    >> ./build.sh
+  - To deploy:
+    >> cd cf
+    >> vi deploy.sh and update the --ami Parameter
+    >> ./deploy.sh
