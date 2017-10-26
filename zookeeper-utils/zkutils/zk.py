@@ -257,6 +257,11 @@ def configure_ensemble(zk_id_ip_pairs, dynamic_file, conf_dir):
    After configuration, it starts the zookeeper server.
    '''
    print 'Doing a fresh Zookeeper ensemble configuration'
+   print 'Resetting static configuration'
+   _cmd_reset_config(dynamic_file, conf_dir)
+
+   # Add hosts as participants to the ensemble configuration
+   print 'Resetting dynamic configuration'
    configs = []
    for pair in zk_id_ip_pairs:
       zk_id = pair[0]
