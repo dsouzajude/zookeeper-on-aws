@@ -15,7 +15,8 @@ ExecStart=/usr/local/bin/zk-bootstrap \
                   --id-file {{ zookeeper.data_dir }}/myid \
                   --dynamic-file {{ zookeeper.dynamic_conf_file }} \
                   --conf-dir {{ zookeeper.conf_dir }} \
-                  --data-dir {{ zookeeper.data_dir }}
+                  --data-dir {{ zookeeper.data_dir }} \
+                  --log-group {{ aws.log_group }}
 
 [Install]
 WantedBy=multi-user.target

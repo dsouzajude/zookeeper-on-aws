@@ -9,7 +9,6 @@ log = logging.getLogger(__name__)
 
 ZK_PORT = 2181
 ZK_ID_TAG = 'zookeeper_id'
-ZK_LOG_GROUP = '/zookeeper/instances'
 ZK_PATH = '/opt/zookeeper/bin'
 ASGROUP_TAG = 'aws:autoscaling:groupName'
 MAX_INSTANCES = 10
@@ -82,12 +81,12 @@ def _cmd_add_zookeeper_id(ensemble_ip, zookeeper_ip, zookeeper_id):
    )
 
 
-def initialize(region, instance_id, id_file):
+def initialize(region, instance_id, id_file, log_group):
    ''' Initializes the zookeeper instance with a valid zookeeper id '''
    log.info('Initializing instance, instance_id=%s' % instance_id)
    zk_id = aws.get_tag(region, instance_id, ZK_ID_TAG)
    if not zk_id:
-      zk_id = get_zookeeper_id(region, ZK_LOG_GROUP)
+      zk_id = get_zookeeper_id(region, log_group)
       aws.set_tag(region, instance_id, ZK_ID_TAG, zk_id)
    utils.save_to_file(id_file, zk_id)
    log.info('Initialized with zookeeper_id=%s' % zk_id)
@@ -140,12 +139,12 @@ def get_zookeeper_instances(region,
    return instances
 
 
-def get_terminated_zookeeper_ids(region, running_ids):
+def get_terminated_zookeeper_ids(region, running_ids, log_group):
    ''' Gets the zookeeper_ids of terminated EC2 instances.
    This is the difference from the list of ids in the LogGroup with
    already running ids.
    '''
-   streams = aws.get_log_streams(region, ZK_LOG_GROUP)
+   streams = aws.get_log_streams(region, log_group)
    ids = [s['logStreamName'] for s in streams]
    terminated_ids = set(ids) - set(running_ids)
    return list(terminated_ids)
@@ -200,7 +199,7 @@ def add_zookeeper_node(ensemble_ip, zookeeper_ip, zookeeper_id):
    return _cmd_add_zookeeper_id(ensemble_ip, zookeeper_ip, zookeeper_id)
 
 
-def remove_zookeeper_nodes(region, ensemble_ip, running_ids):
+def remove_zookeeper_nodes(region, ensemble_ip, running_ids, log_group):
    ''' Removes zookeeper nodes from the ensemble.
    Also removes the log streams associated with them.
 
@@ -209,14 +208,18 @@ def remove_zookeeper_nodes(region, ensemble_ip, running_ids):
    '''
    retry_count = 3
    while retry_count > 0:
-      terminated_ids = get_terminated_zookeeper_ids(region, running_ids)
+      terminated_ids = get_terminated_zookeeper_ids(
+                           region,
+                           running_ids,
+                           log_group
+                        )
       if terminated_ids:
          terminated_ids = ",".join(terminated_ids)
          try:
             log.info('Removing ids=%s' % terminated_ids)
             _cmd_remove_zookeeper_ids(ensemble_ip, terminated_ids)
             log.info('Removing log streams=%s' % terminated_ids)
-            aws.delete_log_streams(region, ZK_LOG_GROUP, terminated_ids)
+            aws.delete_log_streams(region, log_group, terminated_ids)
             return terminated_ids
          except utils.CommandError as ex:
             log.error('Retrying.. %s' % ex)
@@ -227,8 +230,8 @@ def remove_zookeeper_nodes(region, ensemble_ip, running_ids):
    raise Exception("Terminated zookeeper_ids not removed correctly.")
 
 
-def reconfigure_ensemble(region, zookeeper_id, zookeeper_ip,
-                         running_ids, ensemble_ip, dynamic_file, conf_dir):
+def reconfigure_ensemble(region, zookeeper_id, zookeeper_ip, running_ids,
+                         ensemble_ip, dynamic_file, conf_dir, log_group):
    ''' Reconfigures the zookeeper ensemble by adding a new server to it. '''
 
    # Get and reset the static configuration
@@ -253,7 +256,7 @@ def reconfigure_ensemble(region, zookeeper_id, zookeeper_ip,
 
    # Remove ids from the ensemble
    log.info('Reconfiguration by removing')
-   remove_zookeeper_nodes(region, ensemble_ip, running_ids)
+   remove_zookeeper_nodes(region, ensemble_ip, running_ids, log_group)
 
    # Add host as participant to the ensemble with "add" command
    log.info('Reconfiguration by adding')
@@ -292,7 +295,8 @@ def configure_ensemble(zk_id_ip_pairs, dynamic_file, conf_dir, data_dir):
    log.info('Ensemble Configured.')
 
 
-def do_bootstrap(region, id_file, dynamic_file, conf_dir, data_dir):
+def do_bootstrap(region, id_file, dynamic_file,
+                 conf_dir, data_dir, log_group):
    ''' Bootstraps the zookeeper cluster if it does not exists
    otherwise it bootstraps this instance to join the cluster
    via dynamic reconfiguration.
@@ -301,7 +305,7 @@ def do_bootstrap(region, id_file, dynamic_file, conf_dir, data_dir):
 
    # Initialize Zookeeper instance
    instance_id = aws.get_instance_id()
-   zookeeper_id = initialize(region, instance_id, id_file)
+   zookeeper_id = initialize(region, instance_id, id_file, log_group)
 
    # Get the autoscaling group
    asgroup = aws.get_autoscaling_group(region, ASGROUP_TAG, instance_id)
@@ -369,7 +373,8 @@ def do_bootstrap(region, id_file, dynamic_file, conf_dir, data_dir):
          zk_all_ids,
          valid_ip,
          dynamic_file,
-         conf_dir
+         conf_dir,
+         log_group
       )
    else:
       log.info('Configuring ensemble with all servers')

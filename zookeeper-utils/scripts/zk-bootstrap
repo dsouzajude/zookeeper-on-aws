@@ -19,7 +19,7 @@ def _parse_args():
         '--region',
         type=str,
         nargs=1,
-        metavar=("<AWS_REGION>"),
+        metavar=("<AWS-REGION>"),
         help='AWS Region.'
     )
     parser.add_argument(
@@ -33,22 +33,29 @@ def _parse_args():
         '--dynamic-file',
         type=str,
         nargs=1,
-        metavar=("PATH-TO-DYNAMIC-FILE"),
+        metavar=("<PATH-TO-DYNAMIC-FILE>"),
         help='Path to the dynamic reconfig file.'
     )
     parser.add_argument(
         '--conf-dir',
         type=str,
         nargs=1,
-        metavar=("PATH-TO-CONF-DIRECTORY"),
+        metavar=("<PATH-TO-CONF-DIRECTORY>"),
         help='Path to the conf directory.'
     )
     parser.add_argument(
         '--data-dir',
         type=str,
         nargs=1,
-        metavar=("PATH-TO-DATA-DIRECTORY"),
+        metavar=("<PATH-TO-DATA-DIRECTORY>"),
         help='Path to the data directory.'
+    )
+    parser.add_argument(
+        '--log-group',
+        type=str,
+        nargs=1,
+        metavar=("<AWS-LOG-GROUP>"),
+        help='AWS LogGroup name.'
     )
     return parser
 
@@ -71,7 +78,8 @@ def main():
                    --id-file <PATH-TO-ID-FILE> \
                    --dynamic-file <PATH-TO-DYNAMIC-FILE> \
                    --conf-dir <PATH-TO-CONF-DIRECTORY> \
-                   --data-dir <PATH-TO-DATA-DIRECTORY>
+                   --data-dir <PATH-TO-DATA-DIRECTORY> \
+                   --log-group <AWS-LOG-GROUP>
    '''
    log.info('Running zk-bootstrap script.')
    parser = _parse_args()
@@ -82,6 +90,7 @@ def main():
       dynamic_file = args['dynamic_file'][0]
       conf_dir = args['conf_dir'][0]
       data_dir = args['data_dir'][0]
+      log_group = args['log_group'][0]
    except Exception as ex:
       parser.print_help()
       log.error(str(ex))
@@ -92,7 +101,15 @@ def main():
    log.debug('conf-dir=%s' % conf_dir)
    log.debug('id-file=%s' % id_file)
    log.debug('data-dir=%s' % data_dir)
-   zk.do_bootstrap(region, id_file, dynamic_file, conf_dir, data_dir)
+   log.debug('log-group=%s' % log_group)
+   zk.do_bootstrap(
+      region,
+      id_file,
+      dynamic_file,
+      conf_dir,
+      data_dir,
+      log_group
+   )
    log.info('Script completed.')
 
 
