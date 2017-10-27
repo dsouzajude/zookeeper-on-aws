@@ -1,4 +1,5 @@
 import os
+import sys
 import logging
 from logging.config import dictConfig
 
@@ -53,4 +54,10 @@ def setup_logging():
     return logging.getLogger(__name__)
 
 
+def log_uncaught_exception(exc_type, value, tb):
+    log = logging.getLogger(__name__)
+    log.error(exc_type, exc_info=(exc_type, value, tb))
+
+
 setup_logging()
+sys.excepthook = log_uncaught_exception
