@@ -6,6 +6,13 @@ import subprocess
 log = logging.getLogger(__name__)
 
 
+# Updating the PATH for the shell commands
+PATH = [
+   line.split("=")[1] for line in open("/etc/environment").readlines()
+      if line.split("=")[0] == "PATH"
+][0].strip()
+
+
 class CommandError(Exception):
    def __init__(self, stdout, stderr):
       self.stdout = stdout
@@ -20,6 +27,7 @@ def run_command(command):
    result = subprocess.Popen(
                command,
                shell=True,
+               env={"PATH": PATH},
                stdout=subprocess.PIPE,
                stderr=subprocess.PIPE
             )

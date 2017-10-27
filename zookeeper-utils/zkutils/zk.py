@@ -9,7 +9,6 @@ log = logging.getLogger(__name__)
 
 ZK_PORT = 2181
 ZK_ID_TAG = 'zookeeper_id'
-ZK_PATH = '/opt/zookeeper/bin'
 ASGROUP_TAG = 'aws:autoscaling:groupName'
 MAX_INSTANCES = 10
 CLAIMABLE_ZK_IDS = [str(num) for num in range(1, MAX_INSTANCES)]
@@ -17,9 +16,8 @@ CLAIMABLE_ZK_IDS = [str(num) for num in range(1, MAX_INSTANCES)]
 
 def _cmd_start_zookeeper(conf_dir):
    return utils.run_command(
-      """{zk_path}/zkServer.sh --config {conf_dir} start
-      """.format(zk_path=ZK_PATH, conf_dir=conf_dir)
-      )
+      """zkServer.sh --config {conf_dir} start """.format(conf_dir=conf_dir)
+   )
 
 
 def _cmd_check_ensemble(ip):
@@ -40,9 +38,8 @@ def _cmd_reset_config(dynamic_file, conf_dir):
 
 def _cmd_get_zookeeper_configuration(ensemble_ip):
    return utils.run_command(
-      """{zk_path}/zkCli.sh \
-                  -server {ip}:{port} get /zookeeper/config|grep ^server
-      """.format(zk_path=ZK_PATH, ip=ensemble_ip, port=ZK_PORT)
+      """zkCli.sh -server {ip}:{port} get /zookeeper/config|grep ^server
+      """.format(ip=ensemble_ip, port=ZK_PORT)
    )
 
 
@@ -54,11 +51,10 @@ def _cmd_delete_old_state(data_dir):
 
 def _cmd_remove_zookeeper_ids(ensemble_ip, terminated_ids):
    return utils.run_command(
-      """{zk_path}/zkCli.sh \
+      """zkCli.sh \
             -server {ensemble_ip}:{port} \
             reconfig -remove {terminated_ids}
       """.format(
-         zk_path=ZK_PATH,
          ensemble_ip=ensemble_ip,
          port=ZK_PORT,
          terminated_ids=terminated_ids
@@ -68,11 +64,10 @@ def _cmd_remove_zookeeper_ids(ensemble_ip, terminated_ids):
 
 def _cmd_add_zookeeper_id(ensemble_ip, zookeeper_ip, zookeeper_id):
    return utils.run_command(
-      """{zk_path}/zkCli.sh \
+      """zkCli.sh \
             -server {ensemble_ip}:{port} \
             reconfig -add "server.{id}={zk_ip}:2888:3888:participant;{port}"
       """.format(
-         zk_path=ZK_PATH,
          ensemble_ip=ensemble_ip,
          port=ZK_PORT,
          zk_ip=zookeeper_ip,

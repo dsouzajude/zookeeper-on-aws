@@ -19,13 +19,22 @@
 
 - name: Unpack Zookeeper
   command: tar -xf /tmp/zookeeper-{{ zookeeper.version }}.tar.gz -C /opt/
-  creates: /opt/zookeeper-{{ zookeeper.version }}
+  creates: "{{ zookeeper.path }}-{{ zookeeper.version }}"
 
 - name: Link to Zookeeper Directory
-  file: src=/opt/zookeeper-{{ zookeeper.version }}
-        dest=/opt/zookeeper
+  file: src="{{ zookeeper.path }}-{{ zookeeper.version }}"
+        dest="{{ zookeeper.path }}"
         state=link
         force=yes
+
+- name: Add Zookeeper scripts to PATH
+  lineinfile:
+    dest=/etc/environment
+    state=present
+    backrefs=yes
+    regexp='PATH="(.*)"'
+    line="PATH={{ zookeeper.path }}/bin:\1"
+
 
 - name: Create zookeeper group
   group: name=zookeeper system=true state=present
