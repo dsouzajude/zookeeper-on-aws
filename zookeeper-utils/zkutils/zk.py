@@ -1,7 +1,11 @@
 import time
+import logging
 from datetime import datetime
 
 import aws, utils
+
+
+log = logging.getLogger(__name__)
 
 ZK_PORT = 2181
 ZK_ID_TAG = 'zookeeper_id'
@@ -80,13 +84,13 @@ def _cmd_add_zookeeper_id(ensemble_ip, zookeeper_ip, zookeeper_id):
 
 def initialize(region, instance_id, id_file):
    ''' Initializes the zookeeper instance with a valid zookeeper id '''
-   print 'Initializing Zookeeper instance. instance_id=%s' % instance_id
+   log.info('Initializing instance, instance_id=%s' % instance_id)
    zk_id = aws.get_tag(region, instance_id, ZK_ID_TAG)
    if not zk_id:
       zk_id = get_zookeeper_id(region, ZK_LOG_GROUP)
       aws.set_tag(region, instance_id, ZK_ID_TAG, zk_id)
    utils.save_to_file(id_file, zk_id)
-   print 'Initialized with zookeeper_id=%s' % zk_id
+   log.info('Initialized with zookeeper_id=%s' % zk_id)
    return zk_id
 
 
@@ -121,18 +125,18 @@ def get_zookeeper_instances(region,
       (zk_id_tag, CLAIMABLE_ZK_IDS)
    ]
 
-   print 'Getting all zookeeper instances'
+   log.info('Getting all running zookeeper instances')
    instances = []
    while True:
       instances = aws.get_running_instances(region, tag_value_pairs)
-      print 'Found=%s, Actual=%s' % (len(instances), capacity)
+      log.info('Found=%s, Actual=%s' % (len(instances), capacity))
       if len(instances) >= capacity:
          break
       else:
-         print 'Waiting for all ZK instances to be up and running ...'
-         time.sleep(60) # seconds
+         log.info('Waiting for all ZK instances to be up and running ...')
+         time.sleep(30) # seconds
 
-   print 'Total running instances=%s' % len(instances)
+   log.info('Got all running, count=%s' % len(instances))
    return instances
 
 
@@ -149,15 +153,15 @@ def get_terminated_zookeeper_ids(region, running_ids):
 
 def start_zookeeper(conf_dir):
    ''' Starts zookeeper server. '''
-   print 'Starting Zookeeper server'
+   log.info('Starting Zookeeper server')
    try:
       _cmd_start_zookeeper(conf_dir)
    except utils.CommandError as ex:
-      print "Err: %s" % ex.stderr
+      log.error(ex.stderr)
       if 'JMX' not in str(ex):
          raise
-   print ex.stdout
-   print 'Zookeeper started.'
+   log.info(ex.stdout)
+   log.info('Zookeeper started.')
 
 
 def check_ensemble(ips):
@@ -173,22 +177,22 @@ def check_ensemble(ips):
 
    If there is no quorum, the ensemble will not be functional.
    '''
-   print 'Checking for existing ensemble'
+   log.info('Checking for existing ensemble')
    for ip in ips:
-      print 'Trying to connect with %s' % ip
+      log.info('Trying to connect with %s' % ip)
       retry_count = 3
       while retry_count > 0:
          try:
             stdout = _cmd_check_ensemble(ip)
             is_functional = 'leader' in stdout or 'follower' in stdout
             if is_functional:
-               print 'Ensemble is functional. Connected to %s' % (ip)
+               log.info('Ensemble is functional. Connected to %s' % (ip))
                return ip
          except utils.CommandError as ex:
-            print 'Failed to connect to %s with error' % (ip, str(ex))
+            log.error('Failed to connect to %s with error' % (ip, str(ex)))
          retry_count -= 1
          time.sleep(3)
-   print 'Ensemble is not functional'
+   log.info('Ensemble is not functional')
 
 
 def add_zookeeper_node(ensemble_ip, zookeeper_ip, zookeeper_id):
@@ -209,13 +213,13 @@ def remove_zookeeper_nodes(region, ensemble_ip, running_ids):
       if terminated_ids:
          terminated_ids = ",".join(terminated_ids)
          try:
-            print 'Removing ids=%s' % terminated_ids
+            log.info('Removing ids=%s' % terminated_ids)
             _cmd_remove_zookeeper_ids(ensemble_ip, terminated_ids)
-            print 'Removing log streams=%s' % terminated_ids
+            log.info('Removing log streams=%s' % terminated_ids)
             aws.delete_log_streams(region, ZK_LOG_GROUP, terminated_ids)
             return terminated_ids
          except utils.CommandError as ex:
-            print 'Retrying on Err: %s' % ex
+            log.error('Retrying.. %s' % ex)
             time.sleep(3)
       else:
          return terminated_ids
@@ -229,11 +233,11 @@ def reconfigure_ensemble(region, zookeeper_id, zookeeper_ip,
 
    # Get and reset the static configuration
    # The static file changes the path of the dynamic file location.
-   print 'Resetting static configuration'
+   log.info('Resetting static configuration')
    _cmd_reset_config(dynamic_file, conf_dir)
 
    # Add host as an observer to the ensemble configuration
-   print 'Resetting dynamic configuration'
+   log.info('Resetting dynamic configuration')
    config = _cmd_get_zookeeper_configuration(ensemble_ip)
    config += "\nserver.{id}={ip}:2888:3888:observer;{port}".format(
       id=zookeeper_id,
@@ -248,30 +252,29 @@ def reconfigure_ensemble(region, zookeeper_id, zookeeper_ip,
    time.sleep(30)
 
    # Remove ids from the ensemble
-   print 'Reconfiguration by removing'
+   log.info('Reconfiguration by removing')
    remove_zookeeper_nodes(region, ensemble_ip, running_ids)
 
    # Add host as participant to the ensemble with "add" command
-   print 'Reconfiguration by adding'
-   print 'Adding id %s' % zookeeper_id
+   log.info('Reconfiguration by adding')
+   log.info('Adding id %s' % zookeeper_id)
    add_zookeeper_node(ensemble_ip, zookeeper_ip, zookeeper_id)
-   print 'Ensemble Reconfigured.'
+   log.info('Ensemble Reconfigured.')
 
 
 def configure_ensemble(zk_id_ip_pairs, dynamic_file, conf_dir, data_dir):
    '''Configures zookeeper ensemble with zookeeper instances.
    After configuration, it starts the zookeeper server.
    '''
-   print 'Doing a fresh Zookeeper ensemble configuration'
-
-   print 'Wiping out old state'
+   log.info('Doing a fresh Zookeeper ensemble configuration')
+   log.info('Wiping out old state')
    _cmd_delete_old_state(data_dir)
 
-   print 'Resetting static configuration'
+   log.info('Resetting static configuration')
    _cmd_reset_config(dynamic_file, conf_dir)
 
    # Add hosts as participants to the ensemble configuration
-   print 'Resetting dynamic configuration'
+   log.info('Resetting dynamic configuration')
    configs = []
    for pair in zk_id_ip_pairs:
       zk_id = pair[0]
@@ -286,7 +289,7 @@ def configure_ensemble(zk_id_ip_pairs, dynamic_file, conf_dir, data_dir):
    ensemble_config = '\n'.join(configs)
    utils.save_to_file(dynamic_file, ensemble_config)
    start_zookeeper(conf_dir)
-   print 'Ensemble Configured.'
+   log.info('Ensemble Configured.')
 
 
 def do_bootstrap(region, id_file, dynamic_file, conf_dir, data_dir):
@@ -294,7 +297,7 @@ def do_bootstrap(region, id_file, dynamic_file, conf_dir, data_dir):
    otherwise it bootstraps this instance to join the cluster
    via dynamic reconfiguration.
    '''
-   print 'Bootstrapping ...'
+   log.info('Bootstrapping ...')
 
    # Initialize Zookeeper instance
    instance_id = aws.get_instance_id()
@@ -321,19 +324,20 @@ def do_bootstrap(region, id_file, dynamic_file, conf_dir, data_dir):
    zk_all_ips = []
    zk_all_ids = []
    zk_id_ip_pairs = []
-   print 'Getting (id, ip) pairs'
+   log.info('Getting (id, ip) pairs')
    for i in zk_instances:
       ip = i['NetworkInterfaces'][0]['PrivateIpAddress']
       if i['InstanceId'] == instance_id:
          zk_ip = ip
          zk_id_ip_pairs.append((zookeeper_id, ip))
          zk_all_ids.append(zookeeper_id)
-         print 'My zookeeper_ip=%s' % zk_ip
+         log.info('My zookeeper_id=%s zookeeper_ip=%s' % (zookeeper_id, zk_ip))
       else:
          zk_other_ips.append(ip)
          tags = i['Tags']
          tags = [t for t in tags if t['Key']==ZK_ID_TAG]
          zk_other_id = tags[0]['Value']
+         log.info('Other zookeeper_id=%s zookeeper_ip=%s' % (zk_other_id, ip))
          zk_id_ip_pairs.append((zk_other_id, ip))
          zk_all_ids.append(zk_other_id)
       zk_all_ips.append(ip)
@@ -357,7 +361,7 @@ def do_bootstrap(region, id_file, dynamic_file, conf_dir, data_dir):
    # a new ensemble or dynamically reconfigure the existing one
    valid_ip = check_ensemble(zk_other_ips)
    if valid_ip:
-      print 'Reconfiguring ensemble with new server'
+      log.info('Reconfiguring ensemble with new server')
       reconfigure_ensemble(
          region,
          zookeeper_id,
@@ -368,7 +372,7 @@ def do_bootstrap(region, id_file, dynamic_file, conf_dir, data_dir):
          conf_dir
       )
    else:
-      print 'Configuring ensemble with all servers'
+      log.info('Configuring ensemble with all servers')
       configure_ensemble(
          zk_id_ip_pairs,
          dynamic_file,
@@ -377,7 +381,7 @@ def do_bootstrap(region, id_file, dynamic_file, conf_dir, data_dir):
       )
 
    # Set bootstrap finished tag
-   print 'Setting `bootstrap_finished_time` tag'
+   log.info('Setting `bootstrap_finished_time` tag')
    now = datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')
    aws.set_tag(region, instance_id, "bootstrap_finished_time", now)
-   print 'Bootstrap completed'
+   log.info('Bootstrap completed')

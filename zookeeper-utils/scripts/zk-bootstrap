@@ -1,8 +1,12 @@
 #!/bin/env python
+import logging
 
 import argparse
 
 from zkutils import zk, aws
+
+
+log = logging.getLogger(__name__)
 
 
 def _parse_args():
@@ -69,6 +73,7 @@ def main():
                    --conf-dir <PATH-TO-CONF-DIRECTORY> \
                    --data-dir <PATH-TO-DATA-DIRECTORY>
    '''
+   log.info('Running zk-bootstrap script.')
    parser = _parse_args()
    args = vars(parser.parse_args())
    try:
@@ -77,11 +82,18 @@ def main():
       dynamic_file = args['dynamic_file'][0]
       conf_dir = args['conf_dir'][0]
       data_dir = args['data_dir'][0]
-   except:
+   except Exception as ex:
       parser.print_help()
+      log.error(str(ex))
       raise
 
+   log.debug('id-file=%s' % id_file)
+   log.debug('dynamic-file=%s' % dynamic_file)
+   log.debug('conf-dir=%s' % conf_dir)
+   log.debug('id-file=%s' % id_file)
+   log.debug('data-dir=%s' % data_dir)
    zk.do_bootstrap(region, id_file, dynamic_file, conf_dir, data_dir)
+   log.info('Script completed.')
 
 
 if __name__=='__main__':

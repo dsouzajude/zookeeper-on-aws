@@ -14,3 +14,7 @@ zookeeper:
 aws:
   region: eu-west-1
   log_group: /zookeeper/instances
+
+
+zookeeper_utils:
+  log_level: INFO

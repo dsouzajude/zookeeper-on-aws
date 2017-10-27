@@ -1,5 +1,9 @@
 import os
+import logging
 import subprocess
+
+
+log = logging.getLogger(__name__)
 
 
 class CommandError(Exception):
@@ -12,6 +16,7 @@ class CommandError(Exception):
 
 
 def run_command(command):
+   log.debug(command)
    result = subprocess.Popen(
                command,
                shell=True,
@@ -22,6 +27,8 @@ def run_command(command):
    stdout = stdout.strip()
    stderr = stderr.strip()
    if stderr:
+      log.error(stderr)
+      log.error(stdout)
       raise CommandError(stdout, stderr)
    return stdout
 
@@ -39,9 +46,9 @@ def save_to_file(filename, content):
          with open(filename, 'r') as fread:
             old_content = fread.read()
          fwrite.write(old_content)
-      print 'Backed up filename=%s' % backup_filename
+      log.info('Backed up filename=%s' % backup_filename)
 
    # Save new content
    with open(filename, 'w') as fwrite:
       fwrite.write(content)
-   print 'Saved filename=%s' % filename
+   log.info('Saved filename=%s' % filename)

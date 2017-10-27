@@ -1,6 +1,11 @@
+import logging
+
 import boto3
 import botocore
 import requests
+
+
+log = logging.getLogger(__name__)
 
 
 def get_instance_id():
@@ -45,6 +50,7 @@ def create_log_stream(region, group_name, stream_name):
          logGroupName=group_name,
          logStreamName=stream_name
       )
+      log.info('Created stream=%s' % stream_name)
       return True
    except botocore.exceptions.ClientError as ex:
       if ex.response['Error']['Code'] == "ResourceAlreadyExistsException":
@@ -64,11 +70,15 @@ def delete_log_streams(region, log_group, stream_names):
    ''' Deletes log streams. '''
    cwlogs = boto3.client('logs', region)
    for name in stream_names:
-      cwlogs.delete_log_stream(
-         logGroupName=log_group,
-         logStreamName=name
-      )
-      print 'Deleted stream=%s' % name
+      try:
+         cwlogs.delete_log_stream(
+               logGroupName=log_group,
+               logStreamName=name
+         )
+         log.info('Deleted stream=%s' % name)
+      except botocore.exceptions.ClientError as ex:
+         if ex.response['Error']['Code'] != "ResourceNotFoundException":
+            raise
 
 
 def get_running_instances(region, tag_value_pairs):
