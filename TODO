@@ -18,7 +18,7 @@ majority scales as well.
 - Test with Kafka
 
 
-- README.md with instructions how to build and deploy the ami
+- [DONE] README.md with instructions how to build and deploy the ami
   - To build:
     >> cd ami
     >> ./build.sh
