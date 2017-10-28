@@ -38,7 +38,7 @@
         },
         {
             "type": "file",
-            "source": "../zookeeper-utils",
+            "source": "zookeeper-utils",
             "destination": "/tmp/zookeeper-utils"
         },
         {
@@ -46,9 +46,9 @@
             "command": "ansible-playbook -s",
             "extra_arguments": ["--limit 'zookeeper'"],
             "inventory_groups": "zookeeper",
-            "role_paths": "ansible/roles",
-            "playbook_dir": "ansible",
-            "playbook_file": "ansible/playbook.yml"
+            "role_paths": "ami/ansible/roles",
+            "playbook_dir": "ami/ansible",
+            "playbook_file": "ami/ansible/playbook.yml"
         }
     ]
 }

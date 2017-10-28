@@ -1,6 +1,6 @@
 #!/bin/sh
 
-python CFZookeeper.py \
+python cf/CFZookeeper.py \
          --stackname zookeeper \
          --keyname jude-zk \
          --vpcid vpc-5125ef34 \
@@ -8,6 +8,6 @@ python CFZookeeper.py \
          --sshsource sg-7728b912 \
          --numhosts 3 \
          --environment Test \
-         --ami ami-ebb81c92 \
+         --ami ami-475cf83e \
          --instancetype m4.large \
          --instancerole wrapp-ec2-host
