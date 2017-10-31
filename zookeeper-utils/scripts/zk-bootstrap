@@ -1,8 +1,12 @@
 #!/bin/env python
+
+###
+### Script to bootstrap or dynamically reconfigure Zookeeper cluster.
+###
+
+
 import logging
-
 import argparse
-
 from zkutils import zk, aws
 
 
