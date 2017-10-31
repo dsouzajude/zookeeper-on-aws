@@ -120,3 +120,10 @@
     user: root
     minute: "*"
     job: "REGION={{ aws.region }} /usr/local/bin/zk-recovery >> /var/log/zk-recovery.log 2>&1"
+
+- name: Cron job to remove terminated EC2 instances from cluster
+  cron:
+    name: zk-remove-terminated
+    user: root
+    minute: "*/3"
+    job: "/usr/local/bin/zk-remove-terminated --region {{ aws.region }} --log-group {{ aws.log_group }} >> /var/log/zk-remove-terminated.log 2>&1"

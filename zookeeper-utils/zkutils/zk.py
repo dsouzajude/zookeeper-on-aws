@@ -189,6 +189,11 @@ def check_ensemble(ips):
    log.info('Ensemble is not functional')
 
 
+def is_leader(ip="localhost"):
+   ''' Returns True if node is the leader and False if otherwise. '''
+   return "leader" in _cmd_check_ensemble(ip)
+
+
 def add_zookeeper_node(ensemble_ip, zookeeper_ip, zookeeper_id):
    ''' Adds a zookeeper node to the ensemble. '''
    return _cmd_add_zookeeper_id(ensemble_ip, zookeeper_ip, zookeeper_id)
@@ -220,6 +225,7 @@ def remove_zookeeper_nodes(region, ensemble_ip, running_ids, log_group):
             log.error('Retrying.. %s' % ex)
             time.sleep(3)
       else:
+         log.info("No terminations found, terminated_ids=%s" % terminated_ids)
          return terminated_ids
       retry_count -= 1
    raise Exception("Terminated zookeeper_ids not removed correctly.")

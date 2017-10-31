@@ -1,1 +1,107 @@
 #!/bin/env python
+
+###
+### Script to remove terminated EC2 instances from Zookeeper cluster.
+###
+
+import sys
+import logging
+import argparse
+from zkutils import zk, aws
+
+
+log = logging.getLogger(__name__)
+
+
+def _parse_args():
+    parser = argparse.ArgumentParser(
+        prog='zk-remove-terminated',
+        usage='%(prog)s [options]',
+        description='Script to remove terminated EC2 instances from Zookeeper.'
+    )
+    parser.add_argument(
+        '--region',
+        type=str,
+        nargs=1,
+        metavar=("<AWS-REGION>"),
+        help='AWS Region.'
+    )
+    parser.add_argument(
+        '--log-group',
+        type=str,
+        nargs=1,
+        metavar=("<AWS-LOG-GROUP>"),
+        help='AWS LogGroup name.'
+    )
+    return parser
+
+
+def main():
+   ''' This script is responsible for removing terminated EC2 instances
+   that were participants in the Zookeeper cluster. It is intended to be run
+   periodically and only by the Leader node.
+
+   To run:
+
+      zk-remove-terminated --region <AWS-REGION> --log-group <AWS-LOG-GROUP>
+
+   '''
+   # Only leader should do the terminations
+   if not zk.is_leader():
+      log.info("Not leader. Exiting ..")
+      sys.exit(0)
+
+   # Parse the arguments
+   parser = _parse_args()
+   args = vars(parser.parse_args())
+   try:
+      region = args['region'][0]
+      log_group = args['log_group'][0]
+   except Exception as ex:
+      parser.print_help()
+      log.error(str(ex))
+      raise
+
+   log.debug('region=%s' % region)
+   log.debug('log-group=%s' % log_group)
+
+   # Get the autoscaling group details
+   instance_id = aws.get_instance_id()
+   log.info("instance_id=%s" % instance_id)
+   asgroup = aws.get_autoscaling_group(region, zk.ASGROUP_TAG, instance_id)
+   asgroup_name = asgroup['AutoScalingGroupName']
+   capacity = asgroup['DesiredCapacity']
+   log.info("Got ASG details, name={name}, capacity={capacity}".format(
+      name=asgroup_name, capacity=capacity
+   ))
+
+   # Get running instances and their instance ids
+   zk_instances = zk.get_zookeeper_instances(
+      region,
+      zk.ASGROUP_TAG,
+      asgroup_name,
+      zk.ZK_ID_TAG,
+      capacity
+   )
+   zk_ids = []
+   for i in zk_instances:
+      tags = i['Tags']
+      tags = [t for t in tags if t['Key']==zk.ZK_ID_TAG]
+      zk_id = tags[0]['Value']
+      zk_ids.append(zk_id)
+
+   log.info(
+      "Running instances, count={count}, zk_ids={zk_ids}".format(
+         count=len(zk_ids), zk_ids=zk_ids
+      ))
+
+   # Terminate the non-running nodes
+   log.info("Removing terminated EC2 instances")
+   zk.remove_zookeeper_nodes(region, "localhost", zk_ids, log_group)
+
+   log.info("Done")
+   sys.exit(0)
+
+
+if __name__=='__main__':
+   main()

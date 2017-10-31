@@ -8,8 +8,10 @@
 - Backup zookeeper data, load it on recovery
   - Only applicable to fresh bootstraps (when ZK failed)
 
-- Test scaling up and down Zookeeper to see if quorum and
+- [DONE] Remove terminated nodes on scaling down
+- [DONE] Test scaling up and down Zookeeper to see if quorum and
 majority scales as well.
+
 
 
 - Test ansible playbook
