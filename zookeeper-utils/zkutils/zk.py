@@ -12,6 +12,8 @@ ZK_ID_TAG = 'zookeeper_id'
 ASGROUP_TAG = 'aws:autoscaling:groupName'
 MAX_INSTANCES = 10
 CLAIMABLE_ZK_IDS = [str(num) for num in range(1, MAX_INSTANCES)]
+BOOTSTRAP_TYPE_FRESH = 'FRESH'
+BOOTSTRAP_TYPE_RECONFIGURED = 'RECONFIGURED'
 
 
 def _cmd_start_zookeeper(conf_dir):
@@ -22,13 +24,13 @@ def _cmd_start_zookeeper(conf_dir):
 
 def _cmd_check_ensemble(ip):
    return utils.run_command(
-      "echo stat | nc {ip} 2181 | grep Mode".format(ip=ip)
+      "echo stat | nc {ip} 2181 -G 5 | grep Mode".format(ip=ip)
    )
 
 
 def _cmd_reset_config(dynamic_file, conf_dir):
    return utils.run_command(
-      """sed -i 's/dynamicConfigFile=.*/dynamicConfigFile={dynamic_file}/' {conf_dir}/zoo.cfg
+      """sed -i'.bk' 's/dynamicConfigFile=.*/dynamicConfigFile={dynamic_file}/' {conf_dir}/zoo.cfg
       """.format(
          dynamic_file=dynamic_file.replace("/", "\/"),
          conf_dir=conf_dir
@@ -154,7 +156,7 @@ def start_zookeeper(conf_dir):
       log.error(ex.stderr)
       if 'JMX' not in str(ex):
          raise
-   log.info(ex.stdout)
+      log.info(ex.stdout)
    log.info('Zookeeper started.')
 
 
@@ -186,6 +188,8 @@ def check_ensemble(ips):
             log.error('Failed to connect to %s with error' % (ip, str(ex)))
          retry_count -= 1
          time.sleep(3)
+         if retry_count >= 0:
+            log.info('Retrying connection')
    log.info('Ensemble is not functional')
 
 
@@ -253,6 +257,7 @@ def reconfigure_ensemble(region, zookeeper_id, zookeeper_ip, running_ids,
 
    # Wait a bit for Zookeeper to initialize itself
    # For some reason it crashes the moment we try to reconfigure it
+   log.info('Sleeping for a bit')
    time.sleep(30)
 
    # Remove ids from the ensemble
@@ -391,3 +396,4 @@ def do_bootstrap(region, id_file, dynamic_file,
    now = datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')
    aws.set_tag(region, instance_id, "bootstrap_finished_time", now)
    log.info('Bootstrap completed')
+   return BOOTSTRAP_TYPE_RECONFIGURED if valid_ip else BOOTSTRAP_TYPE_FRESH

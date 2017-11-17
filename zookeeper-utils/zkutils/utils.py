@@ -7,10 +7,14 @@ log = logging.getLogger(__name__)
 
 
 # Updating the PATH for the shell commands
-PATH = [
-   line.split("=")[1] for line in open("/etc/environment").readlines()
-      if line.split("=")[0] == "PATH"
-][0].strip()
+try:
+   PATH = [
+      line.split("=")[1] for line in open("/etc/environment").readlines()
+         if line.split("=")[0] == "PATH"
+   ][0].strip()
+except Exception as ex:
+   log.warn(ex)
+   PATH = os.environ.get('PATH')
 
 
 class CommandError(Exception):
