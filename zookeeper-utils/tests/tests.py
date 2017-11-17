@@ -16,13 +16,15 @@ class TestZkRemoveTerminated(object):
                                              mock_delete_log_streams,
                                              mock_cmd_remove_zookeeper_ids,
                                              mock_get_log_streams):
+        all_nodes = [str(i) for i in range(1, 3, 1)]
+        running_nodes = [str(i) for i in range(1, 3, 1)]
         mock_get_log_streams.return_value = [
             {
                 'logStreamName': str(i)
-            } for i in range(1, 3, 1)
+            } for i in all_nodes
         ]
         terminated_ids = zk.remove_zookeeper_nodes('eu-west-1',
-                        '127.0.0.1', ['1', '2', '3'], 'test-log-group')
+                        '127.0.0.1', running_nodes, 'test-log-group')
         nt.assert_equals(mock_cmd_remove_zookeeper_ids.call_count, 0)
         nt.assert_equals(mock_delete_log_streams.call_count, 0)
         nt.assert_equals(terminated_ids, [])
@@ -34,11 +36,13 @@ class TestZkRemoveTerminated(object):
                                              mock_delete_log_streams,
                                              mock_cmd_remove_zookeeper_ids,
                                              mock_get_log_streams):
+        all_nodes = [str(i) for i in range(1, 3, 1)]
+        running_nodes = [str(i) for i in range(2, 4, 1)]
         mock_get_log_streams.return_value = [
-            {'logStreamName': str(i)} for i in range(1, 3, 1)
+            {'logStreamName': str(i)} for i in all_nodes
         ]
         terminated_ids = zk.remove_zookeeper_nodes('eu-west-1',
-                        '127.0.0.1', ['2', '3', '4'], 'test-log-group')
+                        '127.0.0.1', running_nodes, 'test-log-group')
         nt.assert_equals(mock_cmd_remove_zookeeper_ids.call_count, 1)
         nt.assert_equals(mock_delete_log_streams.call_count, 1)
         nt.assert_equals(terminated_ids, '1')
