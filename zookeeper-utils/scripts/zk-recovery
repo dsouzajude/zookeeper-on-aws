@@ -1,0 +1,123 @@
+#!/bin/bash
+
+### Script that detects for zookeeper cluster failure
+### and then takes necessary action to recover from it.
+#
+#
+# - Check if another instance of this process is running.
+# If it is then exit, otherwise continue.
+#
+# - Check if this instance has bootstrapped.
+# If it hasn't then exit, otherwise continue.
+#
+# - Check if the zookeeper server is running.
+# If imok is not received from ruok then exit, otherwise continue.
+#     - This indicates bootstrapping failed.
+#     - Investigate logs to see why it failed.
+#
+# - Check if Zookeeper quorum exists.
+# If it does, no recovery needed, then exit, otherwise continue.
+#
+# - At this point we need to do recovery.
+#     - Bootstrap the cluster.
+#     - Optionally bootstrap with data recovery from snapshot.
+
+
+set -x
+
+ZK_PORT=2181
+PIDFILE=/opt/zookeeper/zk-recovery.pid
+INSTANCE_ID=`curl "http://169.254.169.254/latest/meta-data/instance-id"`
+
+
+# Acquire lock to ensure only one instance of
+# the job is running at any time.
+acquireLock() {
+  if [ -f $PIDFILE ]
+  then
+    PID=$(cat $PIDFILE)
+    ps -p $PID > /dev/null 2>&1
+    if [ $? -eq 0 ]
+    then
+      echo "Process already running"
+      exit 1
+    else
+      ## Process not found assume not running
+      echo $$ > $PIDFILE
+      if [ $? -ne 0 ]
+      then
+        echo "Could not create PID file"
+        exit 1
+      fi
+    fi
+  else
+    echo $$ > $PIDFILE
+    if [ $? -ne 0 ]
+    then
+      echo "Could not create PID file"
+      exit 1
+    fi
+  fi
+}
+
+# Releases the lock
+releaseLock(){
+  echo "Releasing lock"
+  rm $PIDFILE
+}
+
+# Checks if the zookeeper cluster has bootstrapped
+# If it hasn't, it's probably bootstrapping now or
+# the bootstrap script failed.
+# Therefore it needs to be investigated.
+hasBootstrapped() {
+  BOOTSTRAPPED_FINISH_TIME=$(/usr/local/bin/aws ec2 describe-tags \
+                  --filters "Name=resource-id,Values=$INSTANCE_ID" "Name=key,Values=bootstrap_finished_time" \
+                  --region=$REGION \
+                  --output=text  | cut -f5)
+
+  if [ "x$BOOTSTRAPPED_FINISH_TIME" == "x" ]; then
+    echo "Bootstrap has not completed."
+    exit 1
+  fi
+}
+
+# Checks if zookeeper server is running
+# Maybe the server is running but quorum doesn't exist.
+# Only in that case we need to recover.
+isOk(){
+  response=`echo ruok | nc localhost $ZK_PORT`
+  if [ "x$response" == "x" ]; then
+    echo "Zookeeper server not running. Check logs."
+    exit 1
+  fi
+
+}
+
+# Checks if zookeeper quorum exists
+hasQuorum(){
+  mode=`echo stat | nc localhost 2181 | grep Mode`
+  if [ "x$mode" != "x" ]; then
+    echo "Zookeeper quorum is functional. Recovery not needed."
+    exit 1
+  fi
+}
+
+# Start recovery by doing re-bootstrapping
+recover(){
+  echo "Performing recovery by Bootstrapping."
+  systemctl restart zk-bootstrap.service
+}
+
+
+main(){
+  acquireLock
+  hasBootstrapped
+  isOk
+  hasQuorum
+  recover
+  releaseLock
+  exit 0
+}
+
+main

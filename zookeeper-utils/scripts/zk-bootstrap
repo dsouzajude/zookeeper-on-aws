@@ -1,0 +1,121 @@
+#!/bin/env python
+
+###
+### Script to bootstrap or dynamically reconfigure Zookeeper cluster.
+###
+
+
+import logging
+import argparse
+from zkutils import zk, aws
+
+
+log = logging.getLogger(__name__)
+
+
+def _parse_args():
+    parser = argparse.ArgumentParser(
+        prog='zk-bootstrap',
+        usage='%(prog)s [options]',
+        description='Bootstrap script for the Zookeeper Ensemble.'
+    )
+    parser.add_argument(
+        '--region',
+        type=str,
+        nargs=1,
+        metavar=("<AWS-REGION>"),
+        help='AWS Region.'
+    )
+    parser.add_argument(
+        '--id-file',
+        type=str,
+        nargs=1,
+        metavar=("<PATH-TO-ID-FILE>"),
+        help='Path to the ID File.'
+    )
+    parser.add_argument(
+        '--dynamic-file',
+        type=str,
+        nargs=1,
+        metavar=("<PATH-TO-DYNAMIC-FILE>"),
+        help='Path to the dynamic reconfig file.'
+    )
+    parser.add_argument(
+        '--conf-dir',
+        type=str,
+        nargs=1,
+        metavar=("<PATH-TO-CONF-DIRECTORY>"),
+        help='Path to the conf directory.'
+    )
+    parser.add_argument(
+        '--data-dir',
+        type=str,
+        nargs=1,
+        metavar=("<PATH-TO-DATA-DIRECTORY>"),
+        help='Path to the data directory.'
+    )
+    parser.add_argument(
+        '--log-group',
+        type=str,
+        nargs=1,
+        metavar=("<AWS-LOG-GROUP>"),
+        help='AWS LogGroup name.'
+    )
+    return parser
+
+
+def main():
+   ''' This program bootstraps the zookeeper cluster. If the cluster already
+   exists and is functional, it will bootstrap this instance to join the
+   cluster via dynamic reconfiguration.
+
+   During the bootstrap, the zookeeper_id will be generated for this instance
+   and saved to the myid file.
+
+   Also, the dynamic config will be generated for a fresh bootstrap if the
+   cluster does not already exists otherwise the instance will join the
+   existing cluster.
+
+   To run bootstrap:
+
+      zk-bootstrap --region <AWS-REGION> \
+                   --id-file <PATH-TO-ID-FILE> \
+                   --dynamic-file <PATH-TO-DYNAMIC-FILE> \
+                   --conf-dir <PATH-TO-CONF-DIRECTORY> \
+                   --data-dir <PATH-TO-DATA-DIRECTORY> \
+                   --log-group <AWS-LOG-GROUP>
+   '''
+   log.info('Running zk-bootstrap script.')
+   parser = _parse_args()
+   args = vars(parser.parse_args())
+   try:
+      region = args['region'][0]
+      id_file = args['id_file'][0]
+      dynamic_file = args['dynamic_file'][0]
+      conf_dir = args['conf_dir'][0]
+      data_dir = args['data_dir'][0]
+      log_group = args['log_group'][0]
+   except Exception as ex:
+      parser.print_help()
+      log.error(str(ex))
+      raise
+
+   log.debug('id-file=%s' % id_file)
+   log.debug('dynamic-file=%s' % dynamic_file)
+   log.debug('conf-dir=%s' % conf_dir)
+   log.debug('id-file=%s' % id_file)
+   log.debug('data-dir=%s' % data_dir)
+   log.debug('log-group=%s' % log_group)
+   zk.do_bootstrap(
+      region,
+      id_file,
+      dynamic_file,
+      conf_dir,
+      data_dir,
+      log_group
+   )
+   log.info('Script completed.')
+
+
+if __name__=='__main__':
+   main()

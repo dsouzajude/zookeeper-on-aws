@@ -1,0 +1,129 @@
+---
+
+
+# Install Zookeeper utils
+
+
+- name: Install zookeeper utils
+  command: pip install /tmp/zookeeper-utils
+
+
+# Install Zookeeper
+
+
+- name: Download Zookeeper
+  get_url:
+    url: http://www.mirrorservice.org/sites/ftp.apache.org/zookeeper/zookeeper-{{ zookeeper.version }}/zookeeper-{{ zookeeper.version }}.tar.gz
+    dest: /tmp/zookeeper-{{ zookeeper.version }}.tar.gz
+    mode: 0440
+
+- name: Unpack Zookeeper
+  command: tar -xf /tmp/zookeeper-{{ zookeeper.version }}.tar.gz -C /opt/
+  creates: "{{ zookeeper.path }}-{{ zookeeper.version }}"
+
+- name: Link to Zookeeper Directory
+  file: src="{{ zookeeper.path }}-{{ zookeeper.version }}"
+        dest="{{ zookeeper.path }}"
+        state=link
+        force=yes
+
+- name: Add Zookeeper scripts to PATH
+  lineinfile:
+    dest=/etc/environment
+    state=present
+    backrefs=yes
+    regexp='PATH="(.*)"'
+    line="PATH={{ zookeeper.path }}/bin:\1"
+
+
+- name: Create zookeeper group
+  group: name=zookeeper system=true state=present
+
+- name: Create zookeeper user
+  user: name=zookeeper
+        groups=zookeeper
+        system=true
+        shell=/dev/false
+
+- name: Create Zookeeper directories
+  become: yes
+  file:
+    group: zookeeper
+    owner: zookeeper
+    state: directory
+    recurse: yes
+    mode: 0644
+    path: "{{ item }}"
+  with_items:
+    - "{{ zookeeper.conf_dir }}"
+    - "{{ zookeeper.data_dir }}"
+    - "{{ zookeeper.log_dir }}"
+
+- name: Setup log4j
+  template: dest="{{zookeeper.conf_dir}}/log4j.properties"
+            owner=root
+            group=root
+            mode=644
+            src=log4j.properties.j2
+
+
+# Configure Zookeeper
+
+
+- name: Setup Zookeeper config
+  become: yes
+  template: dest="{{zookeeper.conf_dir}}/zoo.cfg"
+            owner=zookeeper
+            group=zookeeper
+            mode=644
+            src=zoo.cfg.j2
+
+- name: Copy zookeeper instance init script
+  become: yes
+  copy: src=zk_instance_init.sh
+        dest=/usr/local/bin/zk_instance_init.sh
+        owner=root
+        group=root
+        mode=750
+
+- name: Install Zookeeper instance init service
+  become: yes
+  template: src=zk-instance-init.service.j2
+            dest=/etc/systemd/system/zk-instance-init.service
+            owner=root
+            group=root
+            mode=644
+
+- name: Enable zk-instance-init service
+  become: yes
+  systemd: name=zk-instance-init
+           enabled=yes
+           daemon_reload=yes
+
+- name: Install zookeeper bootstrap service
+  become: yes
+  template: src=zk-bootstrap.service.j2
+            dest=/etc/systemd/system/zk-bootstrap.service
+            owner=root
+            group=root
+            mode=644
+
+- name: Enable zk-bootstrap service
+  become: yes
+  systemd: name=zk-bootstrap
+           enabled=yes
+           daemon_reload=yes
+
+- name: Cron job to detect and recover zookeepr cluster
+  cron:
+    name: zk-recovery
+    user: root
+    minute: "*"
+    job: "REGION={{ aws.region }} /usr/local/bin/zk-recovery >> /var/log/zk-recovery.log 2>&1"
+
+- name: Cron job to remove terminated EC2 instances from cluster
+  cron:
+    name: zk-remove-terminated
+    user: root
+    minute: "*/3"
+    job: "/usr/local/bin/zk-remove-terminated --region {{ aws.region }} --log-group {{ aws.log_group }} >> /var/log/zk-remove-terminated.log 2>&1"

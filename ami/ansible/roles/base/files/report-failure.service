@@ -1,0 +1,7 @@
+[Unit]
+Description=Report systemd script failures
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/logger '{"level": "error", "systemd_unit": "%n", "instance": "%i.service", "machine_id": "%m", "host": "%H", "user": "%u", "boot_id": "%b", "msg": "Systemd script failed"}'

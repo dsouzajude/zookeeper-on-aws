@@ -1,0 +1,22 @@
+[Unit]
+Description=Zookeeper Bootstrap service
+Wants=network-online.target
+After=zk-instance-init.service
+OnFailure=report-failure@%n
+
+[Service]
+Type=forking
+Restart=on-failure
+RestartSec=5
+TimeoutSec=600
+Environment=LOG_LEVEL={{ zookeeper_utils.log_level }}
+ExecStart=/usr/local/bin/zk-bootstrap \
+                  --region {{ aws.region }} \
+                  --id-file {{ zookeeper.data_dir }}/myid \
+                  --dynamic-file {{ zookeeper.dynamic_conf_file }} \
+                  --conf-dir {{ zookeeper.conf_dir }} \
+                  --data-dir {{ zookeeper.data_dir }} \
+                  --log-group {{ aws.log_group }}
+
+[Install]
+WantedBy=multi-user.target
