@@ -24,7 +24,7 @@ def _cmd_start_zookeeper(conf_dir):
 
 def _cmd_check_ensemble(ip):
    return utils.run_command(
-      "echo stat | nc {ip} 2181 -G 5 | grep Mode".format(ip=ip)
+      "echo stat | nc {ip} 2181 | grep Mode".format(ip=ip)
    )
 
 
@@ -185,7 +185,7 @@ def check_ensemble(ips):
                log.info('Ensemble is functional. Connected to %s' % (ip))
                return ip
          except utils.CommandError as ex:
-            log.error('Failed to connect to %s with error' % (ip, str(ex)))
+            log.error('Failed to connect to %s with error %s' % (ip, str(ex)))
          retry_count -= 1
          time.sleep(3)
          if retry_count >= 0:
