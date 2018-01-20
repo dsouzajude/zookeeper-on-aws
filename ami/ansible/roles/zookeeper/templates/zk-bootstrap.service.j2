@@ -10,6 +10,9 @@ Restart=on-failure
 RestartSec=5
 TimeoutSec=600
 Environment=LOG_LEVEL={{ zookeeper_utils.log_level }}
+Environment=ZOO_LOG_DIR={{ zookeeper.log_dir }}
+Environment=ZOO_LOG4J_PROP='INFO,ROLLINGFILE'
+Environment=ZOOCFGDIR={{ zookeeper.conf_dir }}
 ExecStart=/usr/local/bin/zk-bootstrap \
                   --region {{ aws.region }} \
                   --id-file {{ zookeeper.data_dir }}/myid \
