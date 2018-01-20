@@ -1,0 +1,8 @@
+---
+
+- name: restart awslogs
+  become: yes
+  become_method: sudo
+  service:
+    name: awslogs
+    state: restarted
