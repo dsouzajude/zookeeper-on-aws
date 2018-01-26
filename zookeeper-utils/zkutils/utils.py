@@ -28,10 +28,12 @@ class CommandError(Exception):
 
 def run_command(command):
    log.debug(command)
+   env = os.environ
+   env.update({"PATH": PATH})
    result = subprocess.Popen(
                command,
                shell=True,
-               env={"PATH": PATH},
+               env=env,
                stdout=subprocess.PIPE,
                stderr=subprocess.PIPE
             )

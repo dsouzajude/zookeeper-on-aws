@@ -1,0 +1,35 @@
+---
+
+
+# Install awslogs that ships logs to CloudWatch Logs
+
+
+- name: Copy awslogs-agent-setup.py
+  copy:
+    src: "awslogs-agent-setup.py"
+    dest: "/tmp/awslogs-agent-setup.py"
+    mode: 0755
+
+- name: Copy awslogs.conf config file
+  copy:
+    src: "awslogs.conf"
+    dest: "/tmp/awslogs.conf"
+
+- name: Run awslogs-agent-setup.py install script
+  become: yes
+  become_method: sudo
+  command: >
+    python /tmp/awslogs-agent-setup.py
+    --region={{ aws.region }}
+    --non-interactive
+    --configfile /tmp/awslogs.conf
+  notify:
+    - restart awslogs
+
+- name: Start awslogs service
+  become: yes
+  become_method: sudo
+  service:
+    name: awslogs
+    state: started
+    enabled: yes

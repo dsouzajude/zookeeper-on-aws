@@ -51,7 +51,20 @@ After building the AMI, you can deploy it by following the below instructions.
 
 Setting up Zookeeper Infrastructure and Deploying the AMI
 =========================================================
-This script runs the CloudFormation template that sets up necessary infrastructure to host Zookeeper. This includes setting up LauchConfigurations, AutoscalingGroups with instances that assume a role and SecurityGroups. It assumes there is already a VPC in place into which these resources would reside in. To setup this up perform the following steps:
+This script runs the CloudFormation template that sets up necessary infrastructure to host Zookeeper. This includes setting up LauchConfigurations, AutoscalingGroups with instances that assume a role and SecurityGroups. It assumes there is already a VPC in place into which these resources would reside in and an IAM role for the
+zookeeper instance with atleast the following permissions:
+
+  - logs:CreateLogGroup
+  - logs:CreateLogStream
+  - logs:PutLogEvents
+  - logs:DeleteLogStream
+  - logs:DescribeLogStreams
+  - ec2:DescribeInstances
+  - ec2:DescribeTags
+  - ec2:CreateTags
+  - autoscaling:Describe*
+
+To setup this up perform the following steps:
 
 - Edit `deploy.sh` and set the appropriate parameters.
 - Execute `deploy.sh` or run:
